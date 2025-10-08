@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加入美味餐廳 LINE 訂餐好友</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        /* 主要樣式 */
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .qrcode-section {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        
+        .qrcode {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border: 3px solid #333;
+            padding: 10px;
+            background: white;
+        }
+        
+        .btn-line {
+            display: block;
+            background: #06C755;
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        
+        .btn-line:hover {
+            background: #05a344;
+            transform: translateY(-2px);
+        }
+        
+        .features {
+            text-align: left;
+            margin: 25px 0;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        /* 掃描器樣式 */
+        .scanner-container {
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto;
+            position: relative;
+        }
+        
+        #qr-reader {
+            width: 100%;
+            border: 2px solid #06C755;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .scan-btn {
+            background: #06C755;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        
+        .scan-btn:hover {
+            background: #05a344;
+            transform: translateY(-2px);
+        }
+        
+        .scan-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            min-height: 20px;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 掃描器覆蓋樣式 */
+        #qr-reader__dashboard_section {
+            padding: 10px;
+        }
+        
+        #qr-reader__dashboard_section_csr {
+            text-align: center;
+        }
+        
+        #html5-qrcode-button-camera-stop {
+            background: #dc3545;
+        }
+        
+        #html5-qrcode-button-camera-start {
+            background: #28a745;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #06C755;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 餐廳標題 -->
+        <div class="logo">美</div>
+        <h1>美味餐廳 LINE 訂餐</h1>
+        <p>立即加入好友，享受便捷線上訂餐服務</p>
+        
+        <!-- QR Code 區塊 -->
+        <div class="qrcode-section">
+            <h3>掃描 QR Code 加入好友</h3>
+            <div class="qrcode">
+                <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
+                     alt="美味餐廳 LINE 訂餐 QR Code" 
+                     width="200" height="200">
+            </div>
+            <p>或使用 LINE App 掃描上方條碼</p>
+        </div>
+        
+        <!-- 按鈕連結 -->
+        <a href="https://line.me/R/ti/p/@561zotgq" 
+           class="btn-line" 
+           target="_blank">
+           📱 立即加入好友
+        </a>
+
+        <!-- QR Code 掃描器 -->
+        <div class="qrcode-section">
+            <h3>掃描用戶 QR Code 綁定帳號</h3>
+            <div class="scanner-container">
+                <div id="qr-reader"></div>
+            </div>
+            <button id="start-scanner" class="scan-btn">
+                <span class="btn-text">開始掃描</span>
+            </button>
+            <button id="stop-scanner" class="scan-btn" style="display: none;">
+                <span class="btn-text">停止掃描</span>
+            </button>
+            <div id="scan-status" class="status-message status-info">
+                點擊「開始掃描」來綁定您的 LINE 帳號
+            </div>
+        </div>
+        
+        <!-- 功能特色 -->
+        <div class="features">
+            <h3>加入好友即可享受：</h3>
+            <div class="feature-item">
+                <span style="font-size: 24px; margin-right: 10px;">🍔</span>
+                <div>
+                    <strong>線上點餐</strong><br>
+                    <small>隨時隨地輕鬆下單</small>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span style="font-size: 24px; margin-right: 10px;">🕒</span>
+                <div>
+                    <strong>快速取餐</strong><br>
+                    <small>節省排隊等待時間</small>
+                </div>
+            </div>
+            <div class="feature-item">
+                <span style="font-size: 24px; margin-right: 10px;">🎁</span>
+                <div>
+                    <strong>專屬優惠</strong><br>
+                    <small>會員獨享特別折扣</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 使用說明 -->
+        <div style="text-align: left; background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px;">
+            <h4>📝 使用說明：</h4>
+            <ol>
+                <li>點擊「立即加入好友」或掃描 QR Code</li>
+                <li>在 LINE 中開啟聊天室</li>
+                <li>點擊菜單連結開始點餐</li>
+                <li>送出訂單後即完成訂購</li>
+                <li>使用「掃描用戶 QR Code」功能綁定帳號獲得專屬優惠</li>
+            </ol>
+        </div>
+
+        <!-- 測試區域 -->
+        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 10px;">
+            <h4>🧪 測試功能</h4>
+            <p style="font-size: 12px; color: #856404;">用於測試 LINE 用戶 ID 綁定功能</p>
+            <input type="text" id="test-user-id" placeholder="輸入測試 LINE 用戶 ID (例如: U1234567890)" 
+                   style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px;">
+            <button onclick="testManualBinding()" class="scan-btn" style="background: #ffc107; color: #000;">
+                測試綁定
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 簡單的動畫效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.5s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // 初始化 QR 掃描器
+            initQRScanner();
+            
+            // 點擊統計（可選）
+            const lineBtn = document.querySelector('.btn-line');
+            lineBtn.addEventListener('click', function() {
+                console.log('用戶點擊加入好友按鈕');
+            });
+        });
+
+        // QR 掃描器變數
+        let html5QrcodeScanner = null;
+        let isScanning = false;
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_N8U8_XyfyAb73igof53_g-xA3Tx6yAm8DSPh1_0IUx6Rlz9sMm_aa4mSmxfuabCJ/exec';
+
+        // 初始化 QR 掃描器
+        function initQRScanner() {
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            const statusDiv = document.getElementById('scan-status');
+
+            // 檢查瀏覽器是否支援相機
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = '⚠️ 您的瀏覽器不支援相機功能<br><small>請使用 Chrome、Edge 或手機瀏覽器</small>';
+                startBtn.disabled = true;
+                return;
+            }
+
+            // 初始化掃描器
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
+
+            startBtn.addEventListener('click', startScanner);
+            stopBtn.addEventListener('click', stopScanner);
+        }
+
+        // 開始掃描
+        function startScanner() {
+            if (isScanning) return;
+
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            const statusDiv = document.getElementById('scan-status');
+
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            statusDiv.className = 'status-message status-info';
+            statusDiv.innerHTML = '📷 掃描中...請將 LINE 用戶 QR Code 對準鏡頭';
+
+            isScanning = true;
+
+            // 開始掃描
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, // 使用後置攝像頭
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("掃描器啟動失敗:", err);
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = '❌ 無法啟動相機: ' + err.message;
+                stopScanner();
+            });
+        }
+
+        // 停止掃描
+        function stopScanner() {
+            if (!isScanning || !html5QrcodeScanner) return;
+
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            const statusDiv = document.getElementById('scan-status');
+
+            html5QrcodeScanner.stop().then(() => {
+                console.log("QR 掃描器已停止");
+            }).catch(err => {
+                console.error("停止掃描器時出錯:", err);
+            });
+
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            statusDiv.className = 'status-message status-info';
+            statusDiv.innerHTML = '⏸️ 掃描已停止，點擊「開始掃描」重新啟動';
+            
+            isScanning = false;
+        }
+
+        // 掃描成功回調
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`掃描結果: ${decodedText}`, decodedResult);
+            
+            const statusDiv = document.getElementById('scan-status');
+            
+            // 檢查是否為 LINE 用戶 ID 格式 (通常以 U 開頭)
+            if (decodedText && (decodedText.startsWith('U') || decodedText.length > 10)) {
+                statusDiv.className = 'status-message status-success';
+                statusDiv.innerHTML = '✅ 掃描成功！正在綁定您的帳號...';
+                
+                // 發送到 Google Apps Script 保存用戶數據
+                saveUserDataToSheet(decodedText);
+            } else {
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = '❌ 無效的 QR Code<br><small>請掃描 LINE 用戶 QR Code</small>';
+                
+                // 2秒後恢復掃描狀態
+                setTimeout(() => {
+                    if (isScanning) {
+                        statusDiv.className = 'status-message status-info';
+                        statusDiv.innerHTML = '📷 掃描中...請將 LINE 用戶 QR Code 對準鏡頭';
+                    }
+                }, 2000);
+            }
+        }
+
+        // 掃描失敗回調
+        function onScanFailure(error) {
+            // 失敗是正常的，不需要特別處理
+            // console.log("掃描失敗:", error);
+        }
+
+        // 保存用戶數據到 Google Sheet
+        function saveUserDataToSheet(lineUserId) {
+            const statusDiv = document.getElementById('scan-status');
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            
+            // 顯示加載狀態
+            statusDiv.innerHTML = '<div class="loading"></div>綁定中...';
+            
+            // 停止掃描器
+            stopScanner();
+
+            // 發送 POST 請求到 Google Apps Script
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'saveUser',
+                    lineUserId: lineUserId,
+                    timestamp: new Date().toISOString(),
+                    source: 'qr_scanner_web'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('服務器響應:', data);
+                
+                if (data.success) {
+                    statusDiv.className = 'status-message status-success';
+                    statusDiv.innerHTML = `✅ ${data.message || '帳號綁定成功！'}<br><small>您現在可以使用所有訂餐功能</small>`;
+                } else {
+                    throw new Error(data.error || '綁定失敗');
+                }
+            })
+            .catch(error => {
+                console.error('保存用戶數據時出錯:', error);
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = `❌ 綁定失敗<br><small>${error.message}</small>`;
+                
+                // 提供重試按鈕
+                setTimeout(() => {
+                    const retryBtn = document.createElement('button');
+                    retryBtn.textContent = '重試掃描';
+                    retryBtn.className = 'scan-btn';
+                    retryBtn.style.marginTop = '10px';
+                    retryBtn.onclick = () => {
+                        statusDiv.innerHTML = '點擊「開始掃描」來綁定您的 LINE 帳號';
+                        startBtn.style.display = 'inline-block';
+                        stopBtn.style.display = 'none';
+                    };
+                    statusDiv.appendChild(retryBtn);
+                }, 1000);
+            });
+        }
+
+        // 手動測試綁定功能
+        function testManualBinding() {
+            const testUserId = document.getElementById('test-user-id').value.trim();
+            const statusDiv = document.getElementById('scan-status');
+            
+            if (!testUserId) {
+                alert('請輸入測試用的 LINE 用戶 ID');
+                return;
+            }
+            
+            if (!testUserId.startsWith('U') && testUserId.length < 10) {
+                if (!confirm('這個用戶 ID 格式可能不正確，是否繼續測試？')) {
+                    return;
+                }
+            }
+            
+            statusDiv.className = 'status-message status-info';
+            statusDiv.innerHTML = '<div class="loading"></div>測試綁定中...';
+            
+            saveUserDataToSheet(testUserId);
+        }
+
+        // 頁面卸載時停止掃描器
+        window.addEventListener('beforeunload', function() {
+            if (isScanning && html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(err => {
+                    console.error("卸載時停止掃描器出錯:", err);
+                });
+            }
+        });
+
+        // 處理相機權限變化
+        navigator.mediaDevices.addEventListener('devicechange', function() {
+            console.log('相機設備發生變化');
+        });
+
+        // 檢查頁面可見性，當頁面隱藏時停止掃描
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isScanning) {
+                console.log('頁面隱藏，停止掃描');
+                stopScanner();
+            }
+        });
+    </script>
+</body>
+</html>
