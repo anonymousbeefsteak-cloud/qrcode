@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* 主要樣式 */
+        /* 保持原有样式不变 */
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -155,23 +155,6 @@
             display: none;
         }
 
-        /* 掃描器覆蓋樣式 */
-        #qr-reader__dashboard_section {
-            padding: 10px;
-        }
-        
-        #qr-reader__dashboard_section_csr {
-            text-align: center;
-        }
-        
-        #html5-qrcode-button-camera-stop {
-            background: #dc3545;
-        }
-        
-        #html5-qrcode-button-camera-start {
-            background: #28a745;
-        }
-
         .loading {
             display: inline-block;
             width: 20px;
@@ -204,12 +187,11 @@
 </head>
 <body>
     <div class="container">
-        <!-- 餐廳標題 -->
+        <!-- 页面内容保持不变 -->
         <div class="logo">美</div>
         <h1>美味餐廳 LINE 訂餐</h1>
         <p>立即加入好友，享受便捷線上訂餐服務</p>
         
-        <!-- QR Code 區塊 -->
         <div class="qrcode-section">
             <h3>掃描 QR Code 加入好友</h3>
             <div class="qrcode">
@@ -220,14 +202,12 @@
             <p>或使用 LINE App 掃描上方條碼</p>
         </div>
         
-        <!-- 按鈕連結 -->
         <a href="https://line.me/R/ti/p/@561zotgq" 
            class="btn-line" 
            target="_blank">
            📱 立即加入好友
         </a>
 
-        <!-- QR Code 掃描器 -->
         <div class="qrcode-section">
             <h3>掃描用戶 QR Code 綁定帳號</h3>
             <div class="scanner-container">
@@ -248,7 +228,6 @@
             </div>
         </div>
         
-        <!-- 功能特色 -->
         <div class="features">
             <h3>加入好友即可享受：</h3>
             <div class="feature-item">
@@ -274,7 +253,6 @@
             </div>
         </div>
         
-        <!-- 使用說明 -->
         <div style="text-align: left; background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px;">
             <h4>📝 使用說明：</h4>
             <ol>
@@ -286,7 +264,6 @@
             </ol>
         </div>
 
-        <!-- 測試區域 -->
         <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 10px;">
             <h4>🧪 測試功能</h4>
             <p style="font-size: 12px; color: #856404;">用於測試 LINE 用戶 ID 綁定功能</p>
@@ -302,7 +279,6 @@
     </div>
 
     <script>
-        // 簡單的動畫效果
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.querySelector('.container');
             container.style.opacity = '0';
@@ -314,23 +290,18 @@
                 container.style.transform = 'translateY(0)';
             }, 100);
             
-            // 初始化 QR 掃描器
             initQRScanner();
             
-            // 點擊統計
             const lineBtn = document.querySelector('.btn-line');
             lineBtn.addEventListener('click', function() {
                 logDebug('用戶點擊加入好友按鈕');
             });
         });
 
-        // QR 掃描器變數
         let html5QrcodeScanner = null;
         let isScanning = false;
-        // 已設置您提供的 Google Apps Script URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzO1XgJqnLb5Cef8tT4_YnHxAp9TGQOyt0T9BxwtKIQvFY3uFZlU7WusjxU66LNQQJp/exec';
 
-        // 日志调试信息
         function logDebug(message) {
             const debugEl = document.getElementById('debug-info');
             const debugSection = document.getElementById('debug-section');
@@ -344,7 +315,6 @@
             console.log(`[DEBUG] ${message}`);
         }
 
-        // 显示/隐藏调试信息
         function toggleDebug() {
             const debugSection = document.getElementById('debug-section');
             if (debugSection) {
@@ -352,7 +322,6 @@
             }
         }
 
-        // 初始化 QR 掃描器
         function initQRScanner() {
             const startBtn = document.getElementById('start-scanner');
             const stopBtn = document.getElementById('stop-scanner');
@@ -360,7 +329,6 @@
 
             logDebug('初始化QR扫描器');
             
-            // 檢查瀏覽器是否支援相機
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 statusDiv.className = 'status-message status-error';
                 statusDiv.innerHTML = '⚠️ 您的瀏覽器不支援相機功能<br><small>請使用 Chrome、Edge 或手機瀏覽器</small>';
@@ -369,7 +337,6 @@
                 return;
             }
 
-            // 初始化掃描器
             try {
                 html5QrcodeScanner = new Html5Qrcode("qr-reader");
                 logDebug('QR扫描器初始化成功');
@@ -385,7 +352,6 @@
             stopBtn.addEventListener('click', stopScanner);
         }
 
-        // 開始掃描
         function startScanner() {
             if (isScanning) return;
 
@@ -401,9 +367,8 @@
             isScanning = true;
             logDebug('開始掃描');
 
-            // 開始掃描
             html5QrcodeScanner.start(
-                { facingMode: "environment" }, // 使用後置攝像頭
+                { facingMode: "environment" },
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
@@ -419,7 +384,6 @@
             });
         }
 
-        // 停止掃描
         function stopScanner() {
             if (!isScanning || !html5QrcodeScanner) return;
 
@@ -441,24 +405,20 @@
             isScanning = false;
         }
 
-        // 掃描成功回調
         function onScanSuccess(decodedText, decodedResult) {
             logDebug(`掃描結果: ${decodedText}`);
             
             const statusDiv = document.getElementById('scan-status');
             
-            // 檢查是否為 LINE 用戶 ID 格式 (通常以 U 開頭)
             if (decodedText && (decodedText.startsWith('U') || decodedText.length > 10)) {
                 statusDiv.className = 'status-message status-success';
                 statusDiv.innerHTML = '✅ 掃描成功！正在綁定您的帳號...';
                 
-                // 發送到 Google Apps Script 保存用戶數據
                 saveUserDataToSheet(decodedText);
             } else {
                 statusDiv.className = 'status-message status-error';
                 statusDiv.innerHTML = '❌ 無效的 QR Code<br><small>請掃描 LINE 用戶 QR Code</small>';
                 
-                // 2秒後恢復掃描狀態
                 setTimeout(() => {
                     if (isScanning) {
                         statusDiv.className = 'status-message status-info';
@@ -468,39 +428,48 @@
             }
         }
 
-        // 掃描失敗回調
         function onScanFailure(error) {
-            // 只記錄嚴重錯誤
             if (error && error !== "No QR code found") {
                 logDebug("掃描失敗: " + error);
             }
         }
 
-        // 保存用戶數據到 Google Sheet
+        // 改进的数据发送函数 - 修复POST数据问题
         function saveUserDataToSheet(lineUserId) {
             const statusDiv = document.getElementById('scan-status');
             const startBtn = document.getElementById('start-scanner');
             const stopBtn = document.getElementById('stop-scanner');
             
-            // 顯示加載狀態
             statusDiv.innerHTML = '<div class="loading"></div>綁定中...';
             logDebug(`準備保存用戶數據: ${lineUserId}`);
             
-            // 停止掃描器
+            // 验证用户ID
+            if (!lineUserId) {
+                logDebug('用戶ID為空，無法保存');
+                statusDiv.className = 'status-message status-error';
+                statusDiv.innerHTML = '❌ 用戶ID為空，無法保存';
+                return;
+            }
+            
             stopScanner();
 
-            // 發送 POST 請求到 Google Apps Script
+            // 准备要发送的数据
+            const postData = {
+                action: 'saveUser',
+                lineUserId: lineUserId,
+                timestamp: new Date().toISOString(),
+                source: 'qr_scanner_web'
+            };
+            
+            logDebug('準備發送的數據: ' + JSON.stringify(postData));
+            
+            // 发送POST请求 - 使用FormData格式确保兼容性
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(postData));
+            
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'saveUser',
-                    lineUserId: lineUserId,
-                    timestamp: new Date().toISOString(),
-                    source: 'qr_scanner_web'
-                })
+                body: formData  // 使用FormData代替直接JSON
             })
             .then(response => {
                 logDebug(`服務器響應狀態: ${response.status}`);
@@ -525,7 +494,6 @@
                 statusDiv.className = 'status-message status-error';
                 statusDiv.innerHTML = `❌ 綁定失敗<br><small>${error.message}</small>`;
                 
-                // 提供重試按鈕
                 setTimeout(() => {
                     const retryBtn = document.createElement('button');
                     retryBtn.textContent = '重試掃描';
@@ -541,7 +509,6 @@
             });
         }
 
-        // 手動測試綁定功能
         function testManualBinding() {
             const testUserId = document.getElementById('test-user-id').value.trim();
             const statusDiv = document.getElementById('scan-status');
@@ -563,7 +530,6 @@
             saveUserDataToSheet(testUserId);
         }
 
-        // 頁面卸載時停止掃描器
         window.addEventListener('beforeunload', function() {
             if (isScanning && html5QrcodeScanner) {
                 html5QrcodeScanner.stop().catch(err => {
@@ -572,12 +538,10 @@
             }
         });
 
-        // 處理相機權限變化
         navigator.mediaDevices.addEventListener('devicechange', function() {
             logDebug('相機設備發生變化');
         });
 
-        // 檢查頁面可見性，當頁面隱藏時停止掃描
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && isScanning) {
                 logDebug('頁面隱藏，停止掃描');
@@ -587,3 +551,4 @@
     </script>
 </body>
 </html>
+    
