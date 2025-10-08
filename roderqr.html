@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* 保持原有样式不变 */
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -187,7 +186,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- 页面内容保持不变 -->
         <div class="logo">美</div>
         <h1>美味餐廳 LINE 訂餐</h1>
         <p>立即加入好友，享受便捷線上訂餐服務</p>
@@ -300,7 +298,8 @@
 
         let html5QrcodeScanner = null;
         let isScanning = false;
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcW0LppRr82g3bD8R7A-fJrOPSRGW0bCenoIbTGZ08-iY4041wPUUQ0YrCubA0MpP3/exec';
+        // 确保这个URL与你的Google Apps Script Web App URL一致
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVjv1dvJGrq-FNSxYKoTcc5DLJI9VSPFonVu8-1ZJqrEHSYLyq5XSFar28_2-ohuSJ/exec';
 
         function logDebug(message) {
             const debugEl = document.getElementById('debug-info');
@@ -410,14 +409,15 @@
             
             const statusDiv = document.getElementById('scan-status');
             
-            if (decodedText && (decodedText.startsWith('U') || decodedText.length > 10)) {
+            // 修复：LINE用户ID通常以U开头，增加此验证
+            if (decodedText && decodedText.startsWith('U')) {
                 statusDiv.className = 'status-message status-success';
                 statusDiv.innerHTML = '✅ 掃描成功！正在綁定您的帳號...';
                 
                 saveUserDataToSheet(decodedText);
             } else {
                 statusDiv.className = 'status-message status-error';
-                statusDiv.innerHTML = '❌ 無效的 QR Code<br><small>請掃描 LINE 用戶 QR Code</small>';
+                statusDiv.innerHTML = '❌ 無效的 QR Code<br><small>請掃描 LINE 用戶 QR Code (應以U開頭)</small>';
                 
                 setTimeout(() => {
                     if (isScanning) {
@@ -434,7 +434,7 @@
             }
         }
 
-        // 改进的数据发送函数 - 修复POST数据问题
+        // 修复：改进数据发送函数，确保正确提交到Google Sheet
         function saveUserDataToSheet(lineUserId) {
             const statusDiv = document.getElementById('scan-status');
             const startBtn = document.getElementById('start-scanner');
@@ -463,13 +463,13 @@
             
             logDebug('準備發送的數據: ' + JSON.stringify(postData));
             
-            // 发送POST请求 - 使用FormData格式确保兼容性
-            const formData = new FormData();
-            formData.append('data', JSON.stringify(postData));
-            
+            // 修复：使用fetch API的正确配置
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: formData  // 使用FormData代替直接JSON
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(postData)
             })
             .then(response => {
                 logDebug(`服務器響應狀態: ${response.status}`);
@@ -518,8 +518,9 @@
                 return;
             }
             
-            if (!testUserId.startsWith('U') && testUserId.length < 10) {
-                if (!confirm('這個用戶 ID 格式可能不正確，是否繼續測試？')) {
+            // 修复：增加LINE用户ID格式验证
+            if (!testUserId.startsWith('U')) {
+                if (!confirm('LINE用戶ID通常以U開頭，是否繼續測試？')) {
                     return;
                 }
             }
@@ -538,10 +539,6 @@
             }
         });
 
-        navigator.mediaDevices.addEventListener('devicechange', function() {
-            logDebug('相機設備發生變化');
-        });
-
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && isScanning) {
                 logDebug('頁面隱藏，停止掃描');
@@ -551,4 +548,5 @@
     </script>
 </body>
 </html>
-    
+
+
