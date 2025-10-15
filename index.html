@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 二維碼</title>
-    <!-- 設置 CSP 以允許必要的外部資源 -->
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self';
-        style-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net 'unsafe-inline';
-        script-src 'self' https://static.line-scdn.net https://unpkg.com https://esm.sh 'unsafe-inline';
-        img-src 'self' https://p11-flow-imagex-download-sign.byteimg.com;
-        connect-src 'self' https://script.google.com https://api.line.me;
-    ">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
@@ -74,11 +66,21 @@
         import React, { useState, useCallback, useEffect } from 'react';
         import ReactDOM from 'react-dom/client';
 
+        // --- Application Constants ---
+        const BindingStatus = {
+            Idle: 'idle',
+            Syncing: 'syncing',
+            Success: 'success',
+            Error: 'error',
+        };
+
         // --- components/Toast.tsx ---
         const Toast = ({ message, show }) => {
             return (
                 <div 
-                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer-events-none`}
+                    role="alert"
+                    aria-live="assertive"
                 >
                     {message}
                 </div>
@@ -136,7 +138,7 @@
 
             const renderBindingStatus = () => {
                 switch (bindingStatus) {
-                    case 'syncing':
+                    case BindingStatus.Syncing:
                         return (
                             <div className="text-center mt-6 p-3 bg-blue-50 text-blue-700 rounded-lg">
                                 <p className="text-sm font-medium flex items-center justify-center">
@@ -144,7 +146,7 @@
                                 </p>
                             </div>
                         );
-                    case 'success':
+                    case BindingStatus.Success:
                         return (
                             <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
                                 <p className="text-sm font-medium flex items-center justify-center">
@@ -152,16 +154,16 @@
                                 </p>
                             </div>
                         );
-                    case 'error':
+                    case BindingStatus.Error:
                         return (
                             <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
-                                <p className="text-sm font-medium flex items-center justify-center">
-                                    <i className="fa fa-exclamation-circle mr-2"></i>
-                                    {errorMessage || '帳號連結失敗，請重新整理頁面或稍後再試。'}
+                                <p className="text-sm font-medium flex items-center justify-center text-left">
+                                    <i className="fa fa-exclamation-circle mr-2 flex-shrink-0"></i>
+                                    <span>{errorMessage || '帳號連結失敗，請重新整理頁面或稍後再試。'}</span>
                                 </p>
                             </div>
                         );
-                    case 'idle':
+                    case BindingStatus.Idle:
                     default:
                         return null;
                 }
@@ -232,11 +234,29 @@
                 </div>
             );
         };
-        
+
         // --- components/Header.tsx ---
         const Header = () => {
+            const handleShare = async () => {
+                if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
+                    try {
+                        await window.liff.shareTargetPicker([
+                            {
+                                type: 'text',
+                                text: '掃描QR碼加入我們的LINE好友！',
+                            },
+                        ]);
+                    } catch (error) {
+                        console.error('Share failed:', error);
+                        alert('分享失敗，請稍後再試。');
+                    }
+                } else {
+                    alert('此功能需要在LINE應用程式中開啟才能使用。');
+                }
+            };
+            
             return (
-                <header className="bg-white shadow-sm">
+                <header className="bg-white shadow-sm sticky top-0 z-10">
                     <div className="container mx-auto px-4 py-6 flex justify-between items-center">
                         <div className="flex items-center space-x-2">
                             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
@@ -245,7 +265,10 @@
                             <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
                         </div>
                         <div>
-                            <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                            <button 
+                                onClick={handleShare}
+                                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center"
+                            >
                                 <i className="fa fa-share-alt mr-2"></i>分享
                             </button>
                         </div>
@@ -253,127 +276,125 @@
                 </header>
             );
         };
-        
+
         // --- App.tsx ---
         const App = () => {
             const [showToast, setShowToast] = useState(false);
-            const [bindingStatus, setBindingStatus] = useState('idle');
+            const [bindingStatus, setBindingStatus] = useState(BindingStatus.Idle);
             const [userName, setUserName] = useState('');
             const [userId, setUserId] = useState('');
             const [errorMessage, setErrorMessage] = useState('');
 
             const handleCopy = useCallback(() => {
-                console.log('Copying userId to clipboard');
                 setShowToast(true);
                 setTimeout(() => {
-                    console.log('Hiding toast');
                     setShowToast(false);
                 }, 3000);
             }, []);
 
             useEffect(() => {
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7ja7WO-GiLoD4itJdeOBZ3MZAUxa2IG-1UL726pVhMESzV5XvgI8YHUaplsww5MGYlw/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxRxBxKJHMZAmTyxHduEbv3EHdFE0rUruw5cZCszEXZk6c55pmzYRbtpZLWb5tVcIDjQ/exec';
                 const LIFF_ID = '2008276630-bYNjwMx7';
-                const MAX_RETRIES = 2;
+                const MAX_RETRIES = 3;
 
                 const initializeLiffAndBindUser = async () => {
                     let retryCount = 0;
                     try {
-                        console.log('Checking LIFF SDK availability');
                         if (!window.liff) {
-                            console.error('LIFF SDK not loaded');
                             throw new Error('LIFF SDK failed to load. Check network or CSP settings.');
                         }
                         
-                        console.log('Initializing LIFF with ID:', LIFF_ID);
                         await window.liff.init({ liffId: LIFF_ID });
-                        console.log('LIFF initialized successfully');
 
                         if (!window.liff.isLoggedIn()) {
-                            console.log('User not logged in, redirecting to LINE login');
                             window.liff.login();
                             return;
                         }
                         
-                        setBindingStatus('syncing');
-                        console.log('Fetching LINE user profile');
+                        setBindingStatus(BindingStatus.Syncing);
                         const profile = await window.liff.getProfile();
-                        console.log('LINE profile received:', JSON.stringify(profile));
                         
-                        if (!profile || !profile.userId || typeof profile.userId !== 'string') {
-                            console.error('Invalid or missing LINE user profile or userId:', profile);
+                        if (!profile?.userId) {
                             throw new Error('Failed to retrieve valid LINE user profile or userId');
                         }
 
                         setUserName(profile.displayName || '');
                         setUserId(profile.userId);
-                        console.log('User profile set - userName:', profile.displayName, 'userId:', profile.userId);
 
                         if (sessionStorage.getItem('line_user_bound_session')) {
-                            console.log('User already bound, skipping POST request');
-                            setBindingStatus('success');
+                            setBindingStatus(BindingStatus.Success);
                             return;
                         }
                         
                         const payload = {
                             source: 'line_web_app',
                             customerName: profile.displayName || '',
-                            customerLineId: profile.userId
+                            customerLineId: profile.userId,
+                            customerPhone: '' // Phone is not available from LIFF profile
                         };
-                        console.log('Preparing to send payload to Apps Script:', JSON.stringify(payload));
 
                         const attemptFetch = async () => {
-                            console.log('Sending POST request to:', SCRIPT_URL);
                             const response = await fetch(SCRIPT_URL, {
                                 method: 'POST',
+                                mode: 'cors',
                                 cache: 'no-cache',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify(payload),
                                 redirect: 'follow'
                             });
-                            console.log('POST response status:', response.status);
 
                             if (!response.ok) {
-                                throw new Error(`Server responded with status: ${response.status}`);
+                                const errorText = await response.text();
+                                throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
                             }
 
                             const result = await response.json();
-                            console.log('POST response data:', JSON.stringify(result));
                             if (result.status !== 'success') {
-                                throw new Error(result.message || 'Backend processing failed without specific error');
+                                throw new Error(result.message || 'Backend processing failed');
                             }
-
                             return result;
                         };
 
-                        let result;
                         while (retryCount < MAX_RETRIES) {
                             try {
-                                result = await attemptFetch();
-                                break;
+                                await attemptFetch();
+                                break; // Success
                             } catch (error) {
                                 retryCount++;
-                                console.warn(`Attempt ${retryCount} failed: ${error.message}`);
                                 if (retryCount >= MAX_RETRIES) {
                                     throw error;
                                 }
-                                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                                await new Promise(resolve => setTimeout(resolve, 1500 * retryCount));
                             }
                         }
 
-                        console.log('Setting session storage and binding status to success');
                         sessionStorage.setItem('line_user_bound_session', 'true');
-                        setBindingStatus('success');
-                        console.log('User binding successful:', result);
+                        setBindingStatus(BindingStatus.Success);
+
                     } catch (error) {
                         console.error('LIFF initialization or binding failed:', error);
                         setErrorMessage(error.message || '帳號連結失敗，請重新整理頁面或稍後再試');
-                        setBindingStatus('error');
+                        setBindingStatus(Binding.Error);
                     }
                 };
 
-                console.log('Starting LIFF initialization');
-                initializeLiffAndBindUser();
+                // Wait for the LIFF SDK to be ready before initializing
+                if (window.liff && window.liff.ready) {
+                    window.liff.ready.then(() => {
+                        initializeLiffAndBindUser();
+                    }).catch(error => {
+                        console.error('LIFF ready failed:', error);
+                        setErrorMessage('LIFF SDK 無法啟動，請檢查您的網路連線。');
+                        setBindingStatus(BindingStatus.Error);
+                    });
+                } else {
+                    // Fallback for cases where the script might not be immediately available
+                    window.addEventListener('load', initializeLiffAndBindUser, { once: true });
+                }
+
+                return () => {
+                    window.removeEventListener('load', initializeLiffAndBindUser);
+                };
             }, []);
 
             return (
@@ -404,11 +425,9 @@
         // --- index.tsx (Mounting Logic) ---
         const rootElement = document.getElementById('root');
         if (!rootElement) {
-          console.error('Root element not found');
-          throw new Error("Root element not found, unable to render application");
+          throw new Error("Could not find root element to mount to");
         }
 
-        console.log('Rendering React application');
         const root = ReactDOM.createRoot(rootElement);
         root.render(
           <React.StrictMode>
