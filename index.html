@@ -1,100 +1,61 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Apps Script 資料提交</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    #response {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無名牛排 - 加入好友</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
-<body>
-  <h2>提交用戶資料</h2>
-  <div class="form-group">
-    <label for="userId">用戶 ID:</label>
-    <input type="text" id="userId" placeholder="輸入用戶 ID">
-  </div>
-  <div class="form-group">
-    <label for="displayName">顯示名稱:</label>
-    <input type="text" id="displayName" placeholder="輸入顯示名稱">
-  </div>
-  <div class="form-group">
-    <label for="pictureUrl">頭像 URL (可選):</label>
-    <input type="text" id="pictureUrl" placeholder="輸入頭像 URL">
-  </div>
-  <button onclick="submitData()">提交</button>
-  <div id="response"></div>
+<body style="margin:0;padding:20px;background:#f0f0f0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+    <div style="background:white;padding:30px;border-radius:15px;text-align:center;max-width:400px;">
+        <div style="font-size:48px;">🥩</div>
+        <h2>無名牛排</h2>
+        <p>點擊按鈕加入官方帳號</p>
+        
+        <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
+             style="max-width:200px;margin:15px 0;border:2px solid #ddd;border-radius:10px;">
+        <p><strong>LINE ID: @561zotgq</strong></p>
+        
+        <button onclick="joinLine()" 
+                style="background:#00B900;color:white;border:none;padding:15px 30px;font-size:18px;border-radius:10px;cursor:pointer;width:100%;margin:20px 0;">
+            加入好友
+        </button>
+        
+        <div id="status" style="margin:15px 0;padding:10px;border-radius:5px;display:none;"></div>
+    </div>
 
-  <script>
-    // 替換為你的 Google Apps Script Web App URL
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaLgTqrmFqyINkHTQIwa049kLzkIQXRdq3nEji-HjWITO1lbSQ0z0P_Qfr4GNzgi0m3w/exec';
+    <script>
+        async function initialize() {
+            try {
+                await liff.init({liffId: '2008276630-bYNjwMx7'});
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                // 靜默記錄 - 不顯示狀態
+                const profile = await liff.getProfile();
+                silentRecordUser(profile);
+            } catch (error) {
+                console.log('初始化完成');
+            }
+        }
 
-    // JSONP 回調函數
-    window.handleResponse = function(data) {
-      const responseDiv = document.getElementById('response');
-      responseDiv.style.display = 'block';
-      responseDiv.innerHTML = `<strong>狀態:</strong> ${data.status}<br>
-                              <strong>訊息:</strong> ${data.message}<br>
-                              <strong>用戶是否存在:</strong> ${data.userExists || 'N/A'}`;
-    };
+        function silentRecordUser(profile) {
+            // 使用 Image 物件發送請求 (不會被 CORS 阻擋)
+            const url = `https://script.google.com/macros/s/AKfycbzaLgTqrmFqyINkHTQIwa049kLzkIQXRdq3nEji-HjWITO1lbSQ0z0P_Qfr4GNzgi0m3w/exec?userId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}&timestamp=${encodeURIComponent(new Date().toISOString())}`;
+            const img = new Image();
+            img.src = url;
+        }
 
-    function submitData() {
-      const userId = document.getElementById('userId').value;
-      const displayName = document.getElementById('displayName').value;
-      const pictureUrl = document.getElementById('pictureUrl').value;
+        function joinLine() {
+            if (liff.isInClient()) {
+                liff.openWindow({url: 'line://ti/p/@561zotgq'});
+            } else {
+                window.open('https://line.me/R/ti/p/@561zotgq', '_blank');
+            }
+        }
 
-      if (!userId || !displayName) {
-        alert('請輸入用戶 ID 和顯示名稱');
-        return;
-      }
-
-      // 動態創建 script 標籤以發送 JSONP 請求
-      const script = document.createElement('script');
-      const callbackName = 'handleResponse';
-      const url = `${SCRIPT_URL}?userId=${encodeURIComponent(userId)}&displayName=${encodeURIComponent(displayName)}&pictureUrl=${encodeURIComponent(pictureUrl)}&callback=${callbackName}`;
-      script.src = url;
-
-      // 將 script 標籤添加到頁面以發送請求
-      document.head.appendChild(script);
-
-      // 清理 script 標籤
-      script.onload = script.onerror = () => {
-        document.head.removeChild(script);
-      };
-    }
-  </script>
+        window.onload = initialize;
+    </script>
 </body>
 </html>
