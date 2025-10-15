@@ -1,272 +1,359 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE LIFF 應用程式 - Beefsteak</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            text-align: center;
+    <title>LINE 二維碼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Configure Tailwind colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300', // LINE brand green
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                }
+            }
         }
-        button {
-            padding: 10px 20px;
-            margin: 10px;
-            font-size: 16px;
-        }
-        #profile {
-            margin: 20px 0;
-        }
-        #messageInput {
-            width: 200px;
-            padding: 5px;
-        }
-        #qrCode {
-            margin: 20px 0;
-        }
-        #qrInput {
-            width: 200px;
-            padding: 5px;
+    </script>
+    
+    <!-- Custom utility classes -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
         }
     </style>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Babel for in-browser JSX/TSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import map to load React modules from a CDN -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+      }
+    }
+    </script>
 </head>
-<body>
-    <h1>LINE LIFF 功能示範</h1>
-    <p>歡迎使用 Beefsteak LIFF 應用程式！</p>
+<body class="bg-gray-50 font-sans text-dark">
+    <div id="root"></div>
 
-    <button id="loginBtn">登入 LINE</button>
-    <button id="profileBtn" disabled>取得個人資料</button>
-    <button id="sendMsgBtn" disabled>傳送訊息</button>
-    <button id="scanQrBtn" disabled>掃描 QR Code</button>
-    <button id="shareBtn" disabled>分享目標選擇器</button>
-    <button id="addFriendBtn" disabled>添加好友</button>
-    <button id="generateQrBtn" disabled>生成 QR Code</button>
+    <!-- The entire React application logic -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useCallback, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
 
-    <div id="profile"></div>
-
-    <div>
-        <input type="text" id="messageInput" placeholder="輸入訊息..." disabled>
-        <button id="customSendBtn" disabled>自訂傳送</button>
-    </div>
-
-    <div>
-        <input type="text" id="qrInput" placeholder="輸入 QR Code 內容..." value="https://liff.line.me/2008276630-bYNjwMx7">
-        <button id="generateCustomQrBtn" disabled>生成自訂 QR Code</button>
-    </div>
-    <div id="qrCode"></div>
-
-    <script>
-        // LIFF ID 從設定中取得
-        const LIFF_ID = '2008276630-bYNjwMx7';
-        // LINE Official Account 的好友連結（假設為 @Beefsteak，請根據實際情況修改）
-        const FRIEND_LINK = 'https://line.me/R/ti/p/@Beefsteak';
-
-        async function initializeLiff() {
-            try {
-                await liff.init({
-                    liffId: LIFF_ID
-                });
-                console.log('LIFF 初始化成功');
-                updateUI();
-            } catch (error) {
-                console.error('LIFF 初始化失敗', error);
-                alert('LIFF 初始化失敗: ' + error.message);
-            }
-        }
-
-        function updateUI() {
-            const loginBtn = document.getElementById('loginBtn');
-            const profileBtn = document.getElementById('profileBtn');
-            const sendMsgBtn = document.getElementById('sendMsgBtn');
-            const scanQrBtn = document.getElementById('scanQrBtn');
-            const shareBtn = document.getElementById('shareBtn');
-            const addFriendBtn = document.getElementById('addFriendBtn');
-            const generateQrBtn = document.getElementById('generateQrBtn');
-            const messageInput = document.getElementById('messageInput');
-            const customSendBtn = document.getElementById('customSendBtn');
-            const qrInput = document.getElementById('qrInput');
-            const generateCustomQrBtn = document.getElementById('generateCustomQrBtn');
-
-            if (liff.isLoggedIn()) {
-                loginBtn.style.display = 'none';
-                profileBtn.disabled = false;
-                addFriendBtn.disabled = false;
-                generateQrBtn.disabled = false;
-                qrInput.disabled = false;
-                generateCustomQrBtn.disabled = false;
-                if (liff.isInClient()) {
-                    sendMsgBtn.disabled = false;
-                    scanQrBtn.disabled = false;
-                    shareBtn.disabled = false;
-                    messageInput.disabled = false;
-                    customSendBtn.disabled = false;
-                } else {
-                    alert('傳送訊息和掃描 QR Code 等功能僅在 LINE 應用程式內可用。');
-                }
-            } else {
-                loginBtn.style.display = 'inline-block';
-                profileBtn.disabled = true;
-                sendMsgBtn.disabled = true;
-                scanQrBtn.disabled = true;
-                shareBtn.disabled = true;
-                addFriendBtn.disabled = true;
-                generateQrBtn.disabled = true;
-                messageInput.disabled = true;
-                customSendBtn.disabled = true;
-                qrInput.disabled = true;
-                generateCustomQrBtn.disabled = true;
-            }
-        }
-
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            liff.login();
-        });
-
-        document.getElementById('profileBtn').addEventListener('click', async () => {
-            try {
-                const profile = await liff.getProfile();
-                document.getElementById('profile').innerHTML = `
-                    <h2>個人資料</h2>
-                    <p>使用者 ID: ${profile.userId}</p>
-                    <p>顯示名稱: ${profile.displayName}</p>
-                    <img src="${profile.pictureUrl}" alt="頭像" style="width: 100px; height: 100px; border-radius: 50%;">
-                    <p>狀態訊息: ${profile.statusMessage || '無'}</p>
-                `;
-            } catch (error) {
-                console.error('取得個人資料失敗', error);
-                alert('取得個人資料失敗');
-            }
-        });
-
-        document.getElementById('sendMsgBtn').addEventListener('click', async () => {
-            if (!liff.isInClient()) {
-                alert('此功能僅在 LINE 應用程式內可用。');
-                return;
-            }
-            try {
-                await liff.sendMessages([{
-                    type: 'text',
-                    text: 'Hello, World! 這是來自 LIFF 應用程式的訊息。'
-                }]);
-                alert('訊息傳送成功！');
-            } catch (error) {
-                console.error('傳送訊息失敗', error);
-                alert('傳送訊息失敗: ' + error.message);
-            }
-        });
-
-        document.getElementById('customSendBtn').addEventListener('click', async () => {
-            if (!liff.isInClient()) {
-                alert('此功能僅在 LINE 應用程式內可用。');
-                return;
-            }
-            const messageInput = document.getElementById('messageInput');
-            const text = messageInput.value.trim();
-            if (!text) {
-                alert('請輸入訊息內容。');
-                return;
-            }
-            try {
-                await liff.sendMessages([{
-                    type: 'text',
-                    text: text
-                }]);
-                alert('自訂訊息傳送成功！');
-                messageInput.value = '';
-            } catch (error) {
-                console.error('傳送訊息失敗', error);
-                alert('傳送訊息失敗: ' + error.message);
-            }
-        });
-
-        document.getElementById('scanQrBtn').addEventListener('click', async () => {
-            try {
-                const result = await liff.scanCode();
-                alert('掃描結果: ' + result.value);
-            } catch (error) {
-                console.error('掃描 QR Code 失敗', error);
-                alert('掃描 QR Code 失敗');
-            }
-        });
-
-        document.getElementById('shareBtn').addEventListener('click', async () => {
-            try {
-                await liff.shareTargetPicker([
-                    {
-                        type: 'text',
-                        text: 'Hello, World! 這是分享的訊息。'
-                    }
-                ]);
-                alert('分享成功！');
-            } catch (error) {
-                console.error('分享失敗', error);
-                alert('分享失敗: ' + error.message);
-            }
-        });
-
-        document.getElementById('addFriendBtn').addEventListener('click', async () => {
-            try {
-                if (liff.isInClient()) {
-                    await liff.openWindow({
-                        url: FRIEND_LINK,
-                        external: true
-                    });
-                    alert('正在開啟好友添加頁面...');
-                } else {
-                    window.open(FRIEND_LINK, '_blank');
-                    alert('請在瀏覽器中添加好友。');
-                }
-            } catch (error) {
-                console.error('添加好友失敗', error);
-                alert('添加好友失敗: ' + error.message);
-            }
-        });
-
-        document.getElementById('generateQrBtn').addEventListener('click', () => {
-            const qrCodeDiv = document.getElementById('qrCode');
-            qrCodeDiv.innerHTML = ''; // 清空舊的 QR Code
-            QRCode.toCanvas('https://liff.line.me/2008276630-bYNjwMx7', { errorCorrectionLevel: 'H' }, (err, canvas) => {
-                if (err) {
-                    console.error('生成 QR Code 失敗', err);
-                    alert('生成 QR Code 失敗');
-                    return;
-                }
-                qrCodeDiv.appendChild(canvas);
-                alert('已生成 LIFF URL 的 QR Code！');
-            });
-        });
-
-        document.getElementById('generateCustomQrBtn').addEventListener('click', () => {
-            const qrInput = document.getElementById('qrInput').value.trim();
-            if (!qrInput) {
-                alert('請輸入 QR Code 內容！');
-                return;
-            }
-            const qrCodeDiv = document.getElementById('qrCode');
-            qrCodeDiv.innerHTML = ''; // 清空舊的 QR Code
-            QRCode.toCanvas(qrInput, { errorCorrectionLevel: 'H' }, (err, canvas) => {
-                if (err) {
-                    console.error('生成自訂 QR Code 失敗', err);
-                    alert('生成自訂 QR Code 失敗');
-                    return;
-                }
-                qrCodeDiv.appendChild(canvas);
-                alert('已生成自訂 QR Code！');
-            });
-        });
-
-        // 頁面載入完成後初始化 LIFF
-        window.onload = () => {
-            initializeLiff();
+        // --- components/Toast.tsx ---
+        const Toast = ({ message, show }) => {
+            return (
+                <div 
+                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+                >
+                    {message}
+                </div>
+            );
         };
 
-        // LIFF 狀態變更時更新 UI
-        liff.on('update:liffState', () => {
-            updateUI();
-        });
+        // --- components/Footer.tsx ---
+        const Footer = () => {
+            return (
+                <footer className="bg-dark text-white py-6">
+                    <div className="container mx-auto px-4 text-center">
+                        <p className="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
+                        <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+                    </div>
+                </footer>
+            );
+        };
+
+        // --- components/Instructions.tsx ---
+        const Instructions = () => {
+            return (
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                    <h3 className="text-xl font-bold mb-4 flex items-center">
+                        <i className="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    </h3>
+                    <ol className="space-y-4">
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
+                        </li>
+                    </ol>
+                </div>
+            );
+        };
+
+        // --- components/QRCodeSection.tsx ---
+        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId }) => {
+            const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
+            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
+
+            const handleIdCopy = () => {
+                if (userId) {
+                    navigator.clipboard.writeText(userId);
+                    onCopy();
+                }
+            };
+
+            const renderBindingStatus = () => {
+                switch (bindingStatus) {
+                    case 'syncing':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-blue-50 text-blue-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-spinner fa-spin mr-2"></i>正在連結您的LINE帳號...
+                                </p>
+                            </div>
+                        );
+                    case 'success':
+                         return (
+                            <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-check-circle mr-2"></i>LINE帳號已連結成功！
+                                </p>
+                            </div>
+                        );
+                    case 'error':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-exclamation-circle mr-2"></i>帳號連結失敗，請重新整理頁面。
+                                </p>
+                            </div>
+                        );
+                    case 'idle':
+                    default:
+                        return null;
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
+                    <div className="relative mb-6">
+                        <img 
+                            src={qrCodeUrl}
+                            alt="LINE二維碼"
+                            className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
+                        />
+                        <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    </div>
+                    
+                    <div className="text-center w-full mt-4">
+                         <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
+                         <a
+                            href={lineAddFriendUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
+                            aria-label="Add Friend on LINE"
+                         >
+                            <i className="fa fa-user-plus mr-2"></i>
+                            點此加入好友
+                         </a>
+                    </div>
+
+                    {userName && userId && (
+                        <div className="w-full mt-8 pt-6 border-t border-gray-200">
+                            <h4 className="text-lg font-semibold text-center mb-4 text-gray-700">已連結的LINE帳號資訊</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                                        <i className="fa fa-user mr-2 text-primary"></i>
+                                        LINE 姓名
+                                    </label>
+                                    <p className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 font-medium">
+                                        {userName}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                                        <i className="fa fa-id-card-o mr-2 text-primary"></i>
+                                        LINE User ID
+                                    </label>
+                                    <div className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 flex justify-between items-center">
+                                        <span className="truncate mr-4" title={userId}>{userId}</span>
+                                        <button 
+                                            onClick={handleIdCopy} 
+                                            className="text-gray-500 hover:text-primary transition-colors flex-shrink-0"
+                                            aria-label="複製User ID"
+                                        >
+                                            <i className="fa fa-clone fa-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {renderBindingStatus()}
+                </div>
+            );
+        };
+        
+        // --- components/Header.tsx ---
+        const Header = () => {
+            return (
+                <header className="bg-white shadow-sm">
+                    <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                <i className="fa fa-comment text-white text-xl"></i>
+                            </div>
+                            <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
+                        </div>
+                        <div>
+                            <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                                <i className="fa fa-share-alt mr-2"></i>分享
+                            </button>
+                        </div>
+                    </div>
+                </header>
+            );
+        };
+        
+        // --- App.tsx ---
+        const App = () => {
+            const [showToast, setShowToast] = useState(false);
+            const [bindingStatus, setBindingStatus] = useState('idle');
+            const [userName, setUserName] = useState('');
+            const [userId, setUserId] = useState('');
+
+            const handleCopy = useCallback(() => {
+                setShowToast(true);
+                setTimeout(() => {
+                    setShowToast(false);
+                }, 3000);
+            }, []);
+
+            useEffect(() => {
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywuAXzTlMPVAjhKga1NP9FO19SwNl20lM8YCs_llflZz2fsY3pKV1jajV9J9mjqvqGmQ/exec';
+                const LIFF_ID = '2008276630-bYNjwMx7';
+
+                const initializeLiffAndBindUser = async () => {
+                    try {
+                        const liff = window.liff;
+                        if (!liff) {
+                            console.error('LIFF SDK not found.');
+                            setBindingStatus('error');
+                            return;
+                        }
+                        
+                        await liff.init({ liffId: LIFF_ID });
+
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                            return; 
+                        }
+                        
+                        setBindingStatus('syncing');
+                        const profile = await liff.getProfile();
+                        
+                        setUserName(profile.displayName);
+                        setUserId(profile.userId);
+
+                        if (sessionStorage.getItem('line_user_bound_session')) {
+                            setBindingStatus('success');
+                            return;
+                        }
+                        
+                        const payload = {
+                            source: 'line_web_app',
+                            customerName: profile.displayName,
+                            customerLineId: profile.userId,
+                            notes: 'Automatic user binding via LIFF',
+                            items: [],
+                            totalAmount: 0,
+                            pickupTime: new Date().toLocaleDateString('zh-TW'),
+                        };
+
+                        await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            cache: 'no-cache',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        sessionStorage.setItem('line_user_bound_session', 'true');
+                        setBindingStatus('success');
+
+                    } catch (error) {
+                        console.error('LIFF initialization or binding failed:', error);
+                        setBindingStatus('error');
+                    }
+                };
+
+                initializeLiffAndBindUser();
+
+            }, []);
+
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Header />
+                    <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
+                                <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                            </div>
+                            <QRCodeSection onCopy={handleCopy} bindingStatus={bindingStatus} userName={userName} userId={userId} />
+                            <Instructions />
+                        </div>
+                    </main>
+                    <Footer />
+                    <Toast message="已複製到剪貼簿" show={showToast} />
+                </div>
+            );
+        };
+
+
+        // --- index.tsx (Mounting Logic) ---
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
+        }
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        );
     </script>
 </body>
 </html>
