@@ -125,9 +125,9 @@
         };
 
         // --- components/QRCodeSection.tsx ---
-        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId, errorMessage }) => {
+        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId, errorMessage, debugInfo }) => {
             const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
-            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
+            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-aanyxblx48/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-aanyxblx48-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
 
             const handleIdCopy = () => {
                 if (userId) {
@@ -156,11 +156,17 @@
                         );
                     case BindingStatus.Error:
                         return (
-                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
+                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg space-y-2">
                                 <p className="text-sm font-medium flex items-center justify-center text-left">
                                     <i className="fa fa-exclamation-circle mr-2 flex-shrink-0"></i>
                                     <span>{errorMessage || '帳號連結失敗，請重新整理頁面或稍後再試。'}</span>
                                 </p>
+                                {debugInfo && (
+                                    <div className="mt-2 p-2 bg-red-100 text-red-800 text-xs text-left rounded">
+                                        <p className="font-bold mb-1">偵錯資訊:</p>
+                                        <pre className="whitespace-pre-wrap break-all">{debugInfo}</pre>
+                                    </div>
+                                )}
                             </div>
                         );
                     case BindingStatus.Idle:
@@ -284,6 +290,7 @@
             const [userName, setUserName] = useState('');
             const [userId, setUserId] = useState('');
             const [errorMessage, setErrorMessage] = useState('');
+            const [debugInfo, setDebugInfo] = useState('');
 
             const handleCopy = useCallback(() => {
                 setShowToast(true);
@@ -293,46 +300,31 @@
             }, []);
 
             useEffect(() => {
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxRxBxKJHMZAmTyxHduEbv3EHdFE0rUruw5cZCszEXZk6c55pmzYRbtpZLWb5tVcIDjQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJfGW2X8dBe2UJe9MFIB-sDPI32t_8dhZQKY_Ukv1-naaoOX_KFTbXAClxd_pVZ5qVhg/exec';
                 const LIFF_ID = '2008276630-bYNjwMx7';
-                const MAX_RETRIES = 3;
 
                 const initializeLiffAndBindUser = async () => {
                     console.log('[DEBUG] Starting LIFF initialization...');
-                    let retryCount = 0;
+                    let responseText = ''; // To store raw response for debugging
                     try {
-                        if (!window.liff) {
-                            throw new Error('LIFF SDK is not available on the window object.');
-                        }
+                        if (!window.liff) throw new Error('LIFF SDK is not available.');
                         
-                        console.log('[DEBUG] Calling liff.init() with LIFF ID:', LIFF_ID);
                         await window.liff.init({ liffId: LIFF_ID });
-                        console.log('[DEBUG] liff.init() successful.');
 
                         if (!window.liff.isLoggedIn()) {
-                            console.log('[DEBUG] User is not logged in. Redirecting to login page.');
                             window.liff.login();
                             return;
                         }
                         
-                        console.log('[DEBUG] User is logged in. Setting status to Syncing.');
                         setBindingStatus(BindingStatus.Syncing);
-
-                        console.log('[DEBUG] Getting user profile...');
                         const profile = await window.liff.getProfile();
-                        console.log('[DEBUG] Profile received:', profile);
-                        
-                        if (!profile?.userId) {
-                            throw new Error('Failed to retrieve a valid LINE user profile or userId.');
-                        }
+                        if (!profile?.userId) throw new Error('Failed to get a valid LINE profile.');
 
                         setUserName(profile.displayName || '');
                         setUserId(profile.userId);
-                        console.log(`[DEBUG] State updated with User: ${profile.displayName}, ID: ${profile.userId}`);
-
 
                         if (sessionStorage.getItem('line_user_bound_session')) {
-                            console.log('[DEBUG] User already bound in this session. Skipping API call.');
+                            console.log('[DEBUG] User already bound in this session.');
                             setBindingStatus(BindingStatus.Success);
                             return;
                         }
@@ -341,81 +333,57 @@
                             source: 'line_web_app',
                             customerName: profile.displayName || '',
                             customerLineId: profile.userId,
-                            customerPhone: '' // Phone is not available from LIFF profile
                         };
-                        console.log('[DEBUG] Preparing to send payload to Apps Script:', JSON.stringify(payload));
+                        
+                        const response = await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'cors',
+                            cache: 'no-cache',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Use text/plain for Apps Script
+                            body: JSON.stringify(payload),
+                            redirect: 'follow'
+                        });
+                        
+                        responseText = await response.text();
+                        console.log('[DEBUG] Raw server response:', responseText);
 
-                        const attemptFetch = async () => {
-                            console.log('[DEBUG] Fetch attempt to SCRIPT_URL:', SCRIPT_URL);
-                            const response = await fetch(SCRIPT_URL, {
-                                method: 'POST',
-                                mode: 'cors',
-                                cache: 'no-cache',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload),
-                                redirect: 'follow'
-                            });
-
-                            console.log('[DEBUG] Fetch response status:', response.status);
-                            if (!response.ok) {
-                                const errorText = await response.text();
-                                console.error('[DEBUG] Server error response text:', errorText);
-                                throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
-                            }
-
-                            const result = await response.json();
-                            console.log('[DEBUG] Fetch response JSON:', result);
-                            if (result.status !== 'success') {
-                                throw new Error(result.message || 'Backend processing failed without a specific message.');
-                            }
-                            return result;
-                        };
-
-                        while (retryCount < MAX_RETRIES) {
-                            try {
-                                await attemptFetch();
-                                console.log('[DEBUG] Fetch attempt successful.');
-                                break; // Success
-                            } catch (error) {
-                                retryCount++;
-                                console.warn(`[DEBUG] Fetch attempt ${retryCount} failed:`, error.message);
-                                if (retryCount >= MAX_RETRIES) {
-                                    throw error; // Throw after final attempt
-                                }
-                                await new Promise(resolve => setTimeout(resolve, 1500 * retryCount));
-                            }
+                        if (!response.ok) {
+                           throw new Error(`Server returned status ${response.status}.`);
+                        }
+                        
+                        const result = JSON.parse(responseText);
+                        if (result.status !== 'success') {
+                            throw new Error(result.message || 'Backend processing failed.');
                         }
 
-                        console.log('[DEBUG] Binding process successful. Setting session storage.');
                         sessionStorage.setItem('line_user_bound_session', 'true');
                         setBindingStatus(BindingStatus.Success);
 
                     } catch (error) {
-                        console.error('[FATAL] LIFF initialization or binding process failed:', error);
-                        setErrorMessage(error.message || '帳號連結失敗，請重新整理頁面或稍後再試');
-                        setBindingStatus(BindingStatus.Error); // Corrected typo here
+                        console.error('[FATAL] Process failed:', error);
+                        setErrorMessage(error.message);
+                        setDebugInfo(responseText || error.toString());
+                        setBindingStatus(BindingStatus.Error);
                     }
                 };
 
-                // Wait for the LIFF SDK to be ready before initializing
-                if (window.liff && window.liff.ready) {
-                    window.liff.ready.then(() => {
-                        console.log('[DEBUG] liff.ready promise resolved.');
-                        initializeLiffAndBindUser();
-                    }).catch(error => {
-                        console.error('[FATAL] liff.ready promise was rejected:', error);
-                        setErrorMessage('LIFF SDK 無法啟動，請檢查您的網路連線。');
+                const start = () => {
+                    initializeLiffAndBindUser().catch(err => {
+                        console.error('[FATAL] Unhandled error in initialization:', err);
+                        setErrorMessage('A critical error occurred.');
+                        setDebugInfo(err.toString());
                         setBindingStatus(BindingStatus.Error);
                     });
+                };
+
+                // Use liff.ready for safer initialization
+                if (window.liff?.ready) {
+                    window.liff.ready.then(start);
                 } else {
-                     console.warn('[DEBUG] liff.ready was not available. Using fallback window.onload.');
-                    // Fallback for cases where the script might not be immediately available
-                    window.addEventListener('load', initializeLiffAndBindUser, { once: true });
+                    // Fallback for slower network where liff object might not be ready
+                    window.addEventListener('load', () => window.liff.ready.then(start), { once: true });
                 }
 
-                return () => {
-                    window.removeEventListener('load', initializeLiffAndBindUser);
-                };
             }, []);
 
             return (
@@ -433,6 +401,7 @@
                                 userName={userName} 
                                 userId={userId} 
                                 errorMessage={errorMessage}
+                                debugInfo={debugInfo}
                             />
                             <Instructions />
                         </div>
