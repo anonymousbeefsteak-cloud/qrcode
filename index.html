@@ -299,14 +299,27 @@
                             pickupTime: new Date().toLocaleDateString('zh-TW'),
                         };
 
-                        await fetch(SCRIPT_URL, {
+                        const response = await fetch(SCRIPT_URL, {
                             method: 'POST',
                             cache: 'no-cache',
                             headers: {
-                              'Content-Type': 'application/json',
+                              // Use text/plain to avoid CORS preflight issues with Google Apps Script
+                              'Content-Type': 'text/plain;charset=utf-8',
                             },
                             body: JSON.stringify(payload)
                         });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Failed to send data to Google Sheet:', response.status, errorText);
+                            throw new Error(`Server responded with status ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.status !== 'success') {
+                            console.error('Google Sheet script returned an error:', result.message);
+                            throw new Error(result.message || 'Unknown error from script');
+                        }
 
                         sessionStorage.setItem('line_user_bound_session', 'true');
                         setBindingStatus('success');
