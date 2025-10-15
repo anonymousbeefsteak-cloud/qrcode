@@ -1,10 +1,17 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 二維碼</title>
+    <!-- 設置 CSP 以允許必要的外部資源 -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        style-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net 'unsafe-inline';
+        script-src 'self' https://static.line-scdn.net https://unpkg.com https://esm.sh 'unsafe-inline';
+        img-src 'self' https://p11-flow-imagex-download-sign.byteimg.com;
+        connect-src 'self' https://script.google.com https://api.line.me;
+    ">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
@@ -42,6 +49,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
@@ -82,7 +90,7 @@
             return (
                 <footer className="bg-dark text-white py-6">
                     <div className="container mx-auto px-4 text-center">
-                        <p className="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
+                        <p className="mb-2">© 2025 LINE Corporation. 保留所有權利。</p>
                         <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
                     </div>
                 </footer>
@@ -115,7 +123,7 @@
         };
 
         // --- components/QRCodeSection.tsx ---
-        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId }) => {
+        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId, errorMessage }) => {
             const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
             const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
 
@@ -137,7 +145,7 @@
                             </div>
                         );
                     case 'success':
-                         return (
+                        return (
                             <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
                                 <p className="text-sm font-medium flex items-center justify-center">
                                     <i className="fa fa-check-circle mr-2"></i>LINE帳號已連結成功！
@@ -148,7 +156,8 @@
                         return (
                             <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
                                 <p className="text-sm font-medium flex items-center justify-center">
-                                    <i className="fa fa-exclamation-circle mr-2"></i>帳號連結失敗，請重新整理頁面。
+                                    <i className="fa fa-exclamation-circle mr-2"></i>
+                                    {errorMessage || '帳號連結失敗，請重新整理頁面或稍後再試。'}
                                 </p>
                             </div>
                         );
@@ -173,17 +182,17 @@
                     </div>
                     
                     <div className="text-center w-full mt-4">
-                         <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
-                         <a
+                        <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
+                        <a
                             href={lineAddFriendUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
                             aria-label="Add Friend on LINE"
-                         >
+                        >
                             <i className="fa fa-user-plus mr-2"></i>
                             點此加入好友
-                         </a>
+                        </a>
                     </div>
 
                     {userName && userId && (
@@ -251,77 +260,121 @@
             const [bindingStatus, setBindingStatus] = useState('idle');
             const [userName, setUserName] = useState('');
             const [userId, setUserId] = useState('');
+            const [errorMessage, setErrorMessage] = useState('');
 
             const handleCopy = useCallback(() => {
+                console.log('Copying userId to clipboard');
                 setShowToast(true);
                 setTimeout(() => {
+                    console.log('Hiding toast');
                     setShowToast(false);
                 }, 3000);
             }, []);
 
             useEffect(() => {
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwW-GEV71uyzRJDx9RxinYcBdPh6U7r_EWkOsgPrPc8Wuq-Q7SHpoD0QZpMSsGyexTRPg/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7ja7WO-GiLoD4itJdeOBZ3MZAUxa2IG-1UL726pVhMESzV5XvgI8YHUaplsww5MGYlw/exec';
                 const LIFF_ID = '2008276630-bYNjwMx7';
+                const MAX_RETRIES = 2;
 
                 const initializeLiffAndBindUser = async () => {
+                    let retryCount = 0;
                     try {
-                        const liff = window.liff;
-                        if (!liff) {
-                            setBindingStatus('error');
+                        console.log('Checking LIFF SDK availability');
+                        if (!window.liff) {
+                            console.error('LIFF SDK not loaded');
+                            throw new Error('LIFF SDK failed to load. Check network or CSP settings.');
+                        }
+                        
+                        console.log('Initializing LIFF with ID:', LIFF_ID);
+                        await window.liff.init({ liffId: LIFF_ID });
+                        console.log('LIFF initialized successfully');
+
+                        if (!window.liff.isLoggedIn()) {
+                            console.log('User not logged in, redirecting to LINE login');
+                            window.liff.login();
                             return;
                         }
                         
-                        await liff.init({ liffId: LIFF_ID });
-
-                        if (!liff.isLoggedIn()) {
-                            liff.login();
-                            return; 
-                        }
-                        
                         setBindingStatus('syncing');
-                        const profile = await liff.getProfile();
+                        console.log('Fetching LINE user profile');
+                        const profile = await window.liff.getProfile();
+                        console.log('LINE profile received:', JSON.stringify(profile));
                         
-                        setUserName(profile.displayName);
+                        if (!profile || !profile.userId || typeof profile.userId !== 'string') {
+                            console.error('Invalid or missing LINE user profile or userId:', profile);
+                            throw new Error('Failed to retrieve valid LINE user profile or userId');
+                        }
+
+                        setUserName(profile.displayName || '');
                         setUserId(profile.userId);
+                        console.log('User profile set - userName:', profile.displayName, 'userId:', profile.userId);
 
                         if (sessionStorage.getItem('line_user_bound_session')) {
+                            console.log('User already bound, skipping POST request');
                             setBindingStatus('success');
                             return;
                         }
                         
                         const payload = {
                             source: 'line_web_app',
-                            customerName: profile.displayName,
+                            customerName: profile.displayName || '',
                             customerLineId: profile.userId
                         };
+                        console.log('Preparing to send payload to Apps Script:', JSON.stringify(payload));
 
-                        const response = await fetch(SCRIPT_URL, {
-                            method: 'POST',
-                            cache: 'no-cache',
-                            headers: {
-                              'Content-Type': 'text/plain;charset=utf-8',
-                            },
-                            body: JSON.stringify(payload)
-                        });
+                        const attemptFetch = async () => {
+                            console.log('Sending POST request to:', SCRIPT_URL);
+                            const response = await fetch(SCRIPT_URL, {
+                                method: 'POST',
+                                cache: 'no-cache',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload),
+                                redirect: 'follow'
+                            });
+                            console.log('POST response status:', response.status);
 
-                        if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
+                            if (!response.ok) {
+                                throw new Error(`Server responded with status: ${response.status}`);
+                            }
 
-                        const result = await response.json();
-                        if (result.status !== 'success') throw new Error(result.message || 'Unknown error from script');
+                            const result = await response.json();
+                            console.log('POST response data:', JSON.stringify(result));
+                            if (result.status !== 'success') {
+                                throw new Error(result.message || 'Backend processing failed without specific error');
+                            }
 
+                            return result;
+                        };
+
+                        let result;
+                        while (retryCount < MAX_RETRIES) {
+                            try {
+                                result = await attemptFetch();
+                                break;
+                            } catch (error) {
+                                retryCount++;
+                                console.warn(`Attempt ${retryCount} failed: ${error.message}`);
+                                if (retryCount >= MAX_RETRIES) {
+                                    throw error;
+                                }
+                                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                            }
+                        }
+
+                        console.log('Setting session storage and binding status to success');
                         sessionStorage.setItem('line_user_bound_session', 'true');
                         setBindingStatus('success');
-
+                        console.log('User binding successful:', result);
                     } catch (error) {
                         console.error('LIFF initialization or binding failed:', error);
+                        setErrorMessage(error.message || '帳號連結失敗，請重新整理頁面或稍後再試');
                         setBindingStatus('error');
                     }
                 };
 
+                console.log('Starting LIFF initialization');
                 initializeLiffAndBindUser();
-
             }, []);
-
 
             return (
                 <div className="min-h-screen flex flex-col">
@@ -332,7 +385,13 @@
                                 <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
                                 <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
                             </div>
-                            <QRCodeSection onCopy={handleCopy} bindingStatus={bindingStatus} userName={userName} userId={userId} />
+                            <QRCodeSection 
+                                onCopy={handleCopy} 
+                                bindingStatus={bindingStatus} 
+                                userName={userName} 
+                                userId={userId} 
+                                errorMessage={errorMessage}
+                            />
                             <Instructions />
                         </div>
                     </main>
@@ -342,13 +401,14 @@
             );
         };
 
-
         // --- index.tsx (Mounting Logic) ---
         const rootElement = document.getElementById('root');
         if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
+          console.error('Root element not found');
+          throw new Error("Root element not found, unable to render application");
         }
 
+        console.log('Rendering React application');
         const root = ReactDOM.createRoot(rootElement);
         root.render(
           <React.StrictMode>
