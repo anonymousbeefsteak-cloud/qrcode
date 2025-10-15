@@ -1,69 +1,114 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 二維碼</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    
-    <!-- Configure Tailwind colors and fonts -->
+    <title>LINE 用戶綁定</title>
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://static.line-scdn.net;
+        connect-src 'self' https://script.google.com https://script.googleapis.com https://api.line.me;
+    ">
+    <style>
+        body { margin: 0; padding: 20px; text-align: center; font-family: sans-serif; }
+        .status { margin-top: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+    </style>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <div id="status" class="status"></div>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00C300', // LINE brand green
-                        secondary: '#F5F5F5',
-                        dark: '#333333'
-                    },
-                    fontFamily: {
-                        sans: ['Noto Sans TC', 'sans-serif'],
-                    },
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7HUEHnAE7KmvEZW4EIP9JfA9jAjyWjsCIJnxYvwRfaNRL5R_5WbI7wNkQ32G1c7eKMA/exec';
+        const LIFF_ID = '2008276630-bYNjwMx7';
+        const MAX_RETRIES = 3;
+
+        function setStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+
+        async function initializeLiffAndBindUser() {
+            let retryCount = 0;
+            while (retryCount < MAX_RETRIES) {
+                try {
+                    console.log('Initializing LIFF with ID:', LIFF_ID);
+                    if (!window.liff) throw new Error('LIFF SDK not loaded');
+                    await window.liff.init({ liffId: LIFF_ID });
+                    console.log('LIFF initialized successfully');
+
+                    if (!window.liff.isLoggedIn()) {
+                        console.log('User not logged in, redirecting to LINE login');
+                        window.liff.login();
+                        return;
+                    }
+
+                    setStatus('正在連結...', 'loading');
+                    console.log('Fetching LINE user profile');
+                    const profile = await window.liff.getProfile();
+                    console.log('LINE profile received:', JSON.stringify(profile));
+
+                    if (!profile || !profile.userId || typeof profile.userId !== 'string') {
+                        throw new Error('Invalid LINE user profile or missing userId');
+                    }
+
+                    const payload = {
+                        source: 'line_web_app',
+                        customerName: profile.displayName || '',
+                        customerLineId: profile.userId,
+                        pictureUrl: profile.pictureUrl || ''
+                    };
+                    console.log('Sending POST request with payload:', JSON.stringify(payload));
+
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        redirect: 'follow'
+                    });
+                    console.log('POST response status:', response.status);
+
+                    const responseText = await response.text();
+                    console.log('POST response text:', responseText);
+                    if (!response.ok) {
+                        console.error('POST request failed:', responseText);
+                        throw new Error(`Server responded with status: ${response.status} - ${responseText}`);
+                    }
+
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Failed to parse response:', parseError.message);
+                        throw new Error('Invalid response format from server');
+                    }
+                    console.log('POST response data:', JSON.stringify(result));
+
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'Backend processing failed');
+                    }
+
+                    setStatus('帳號連結成功！', 'success');
+                    return;
+                } catch (error) {
+                    retryCount++;
+                    console.warn(`Attempt ${retryCount} failed: ${error.message}`);
+                    if (retryCount >= MAX_RETRIES) {
+                        console.error('LIFF initialization or binding failed after max retries:', error.message);
+                        setStatus('帳號連結失敗：' + (error.message || '請稍後再試'), 'error');
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
                 }
             }
         }
+
+        initializeLiffAndBindUser();
     </script>
-    
-    <!-- Custom utility classes -->
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .qr-shadow {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            }
-        }
-    </style>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
-    <!-- Babel for in-browser JSX/TSX transpilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Import map to load React modules from a CDN -->
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-<body class="bg-gray-50 font-sans text-dark">
-    <div id="root"></div>
-    <!-- The React application is loaded from index.tsx by the framework -->
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>
