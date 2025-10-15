@@ -4,448 +4,186 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 二維碼</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    
-    <!-- Configure Tailwind colors and fonts -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00C300', // LINE brand green
-                        secondary: '#F5F5F5',
-                        dark: '#333333'
-                    },
-                    fontFamily: {
-                        sans: ['Noto Sans TC', 'sans-serif'],
-                    },
-                }
-            }
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        style-src 'self' 'unsafe-inline';
+        script-src 'self' https://static.line-scdn.net;
+        img-src 'self' https://qr-official.line.me;
+        connect-src 'self' https://script.google.com https://script.googleapis.com https://api.line.me;
+        font-src 'self' data:;
+    ">
+    <!-- Local Tailwind CSS -->
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <!-- Inline Font Awesome CSS -->
+    <style>
+        @font-face {
+            font-family: 'FontAwesome';
+            src: url('/fonts/fontawesome-webfont.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
         }
-    </script>
-    
-    <!-- Custom utility classes -->
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .qr-shadow {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            }
+        .fa {
+            display: inline-block;
+            font: normal normal normal 14px/1 FontAwesome;
+            font-size: inherit;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+        .fa-user-plus:before { content: "\f234"; }
+        .fa-spinner:before { content: "\f110"; }
+        .fa-check-circle:before { content: "\f058"; }
+        .fa-exclamation-circle:before { content: "\f06a"; }
+        .fa-share:before { content: "\f064"; }
     </style>
-    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
-    <!-- Babel for in-browser JSX/TSX transpilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Import map to load React modules from a CDN -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
-      }
-    }
-    </script>
 </head>
-<body class="bg-gray-50 font-sans text-dark">
-    <div id="root"></div>
+<body class="bg-gray-100 font-sans">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full text-center">
+            <h1 class="text-2xl font-bold mb-4">加入 LINE 好友</h1>
+            <img id="qrCode" src="https://qr-official.line.me/sid/M/561zotgq.png" alt="LINE QR Code" class="w-48 h-48 mx-auto mb-4">
+            <p class="text-gray-600 mb-4">掃描上方 QR Code 或點擊下方按鈕加入好友</p>
+            <div class="flex justify-center gap-4">
+                <a href="https://line.me/R/ti/p/@561zotgq" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                    <i class="fa fa-user-plus mr-2"></i>加入好友
+                </a>
+                <button id="shareButton" class="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                    <i class="fa fa-share mr-2"></i>分享
+                </button>
+            </div>
+            <div id="status" class="mt-4"></div>
+        </div>
+        <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0"></div>
+    </div>
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7HUEHnAE7KmvEZW4EIP9JfA9jAjyWjsCIJnxYvwRfaNRL5R_5WbI7wNkQ32G1c7eKMA/exec';
+        const LIFF_ID = '2008276630-bYNjwMx7';
+        const LINE_ADD_FRIEND_URL = 'https://line.me/R/ti/p/@561zotgq';
+        const MAX_RETRIES = 3;
 
-    <!-- The entire React application logic -->
-    <script type="text/babel" data-type="module">
-        import React, { useState, useCallback, useEffect } from 'react';
-        import ReactDOM from 'react-dom/client';
-
-        // --- Application Constants ---
-        const APP_CONFIG = {
-            SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw7HUEHnAE7KmvEZW4EIP9JfA9jAjyWjsCIJnxYvwRfaNRL5R_5WbI7wNkQ32G1c7eKMA/exec',
-            LIFF_ID: '2008276630-bYNjwMx7',
-            // IMPORTANT: Replace this placeholder with a permanent URL to your actual LINE QR code image.
-            // The previous URL was temporary and has expired, causing a 403 error.
-            QR_CODE_URL: "https://qr-official.line.me/gs/M_561zotgq_GW.png", // Using a reliable, generic placeholder
-            LINE_ADD_FRIEND_URL: 'https://line.me/R/ti/p/@561zotgq',
-        };
-
-        const BindingStatus = {
-            Idle: 'idle',
-            Syncing: 'syncing',
-            Success: 'success',
-            Error: 'error',
-        };
-
-        // --- components/Toast.tsx ---
-        const Toast = ({ message, show }) => {
-            return (
-                <div 
-                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'} pointer-events-none`}
-                    role="alert"
-                    aria-live="assertive"
-                >
-                    {message}
-                </div>
-            );
-        };
-
-        // --- components/Footer.tsx ---
-        const Footer = () => {
-            return (
-                <footer className="bg-dark text-white py-6">
-                    <div className="container mx-auto px-4 text-center">
-                        <p className="mb-2">© 2025 LINE Corporation. 保留所有權利。</p>
-                        <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
-                    </div>
-                </footer>
-            );
-        };
-
-        // --- components/FlowDiagram.tsx ---
-        const FlowDiagram = () => {
-            const flowSteps = [
-                { icon: 'fa-user', title: 'LINE 用戶', description: '掃描 QR Code' },
-                { icon: 'fa-mobile', title: 'LIFF 應用程式', description: '取得用戶資料' },
-                { icon: 'fa-cogs', title: 'Google Apps Script', description: '處理並傳送資料' },
-                { icon: 'fa-table', title: 'Google Sheets', description: '寫入並儲存資料' },
-            ];
-
-            return (
-                <div className="bg-white rounded-xl p-6 shadow-md">
-                    <h3 className="text-xl font-bold mb-6 text-center flex items-center justify-center">
-                        <i className="fa fa-sitemap text-primary mr-2"></i>
-                        資料處理流程
-                    </h3>
-                    <div className="relative">
-                        {/* Connecting line */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gray-200" style={{ top: '2rem', bottom: '2rem' }}></div>
-                        
-                        <div className="space-y-8">
-                            {flowSteps.map((step, index) => (
-                                <div key={index} className="flex flex-col items-center text-center relative z-10">
-                                    <div className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center text-xl mb-3 border-4 border-white">
-                                        <i className={`fa ${step.icon}`}></i>
-                                    </div>
-                                    <h4 className="font-semibold text-dark">{step.title}</h4>
-                                    {index < flowSteps.length - 1 && (
-                                        <div className="mt-2 text-gray-500 text-sm flex items-center">
-                                            <i className="fa fa-arrow-down mr-2"></i>
-                                            <span>{step.description}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- components/QRCodeSection.tsx ---
-        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId, errorMessage, debugInfo }) => {
-            const handleIdCopy = () => {
-                if (userId) {
-                    navigator.clipboard.writeText(userId);
-                    onCopy('已複製到剪貼簿');
-                }
-            };
-
-            const renderBindingStatus = () => {
-                switch (bindingStatus) {
-                    case BindingStatus.Syncing:
-                        return (
-                            <div className="text-center mt-6 p-3 bg-blue-50 text-blue-700 rounded-lg">
-                                <p className="text-sm font-medium flex items-center justify-center">
-                                    <i className="fa fa-spinner fa-spin mr-2"></i>正在連結您的LINE帳號...
-                                </p>
-                            </div>
-                        );
-                    case BindingStatus.Success:
-                        return (
-                            <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
-                                <p className="text-sm font-medium flex items-center justify-center">
-                                    <i className="fa fa-check-circle mr-2"></i>LINE帳號已連結成功！
-                                </p>
-                            </div>
-                        );
-                    case BindingStatus.Error:
-                        return (
-                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg space-y-2">
-                                <p className="text-sm font-medium flex items-center justify-center text-left">
-                                    <i className="fa fa-exclamation-circle mr-2 flex-shrink-0"></i>
-                                    <span>{errorMessage || '帳號連結失敗，請重新整理頁面或稍後再試。'}</span>
-                                </p>
-                                {debugInfo && (
-                                    <div className="mt-2 p-2 bg-red-100 text-red-800 text-xs text-left rounded">
-                                        <p className="font-bold mb-1">偵錯資訊:</p>
-                                        <pre className="whitespace-pre-wrap break-all">{debugInfo}</pre>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    case BindingStatus.Idle:
-                    default:
-                        return null;
-                }
-            };
-
-            return (
-                <div className="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
-                    <div className="relative mb-6">
-                        <img 
-                            src={APP_CONFIG.QR_CODE_URL}
-                            alt="LINE二維碼"
-                            className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
-                        />
-                        <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
-                        <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
-                        <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
-                        <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
-                    </div>
-                    
-                    <div className="text-center w-full mt-4">
-                        <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
-                        <a
-                            href={APP_CONFIG.LINE_ADD_FRIEND_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
-                            aria-label="Add Friend on LINE"
-                        >
-                            <i className="fa fa-user-plus mr-2"></i>
-                            點此加入好友
-                        </a>
-                    </div>
-
-                    {userName && userId && (
-                        <div className="w-full mt-8 pt-6 border-t border-gray-200">
-                            <h4 className="text-lg font-semibold text-center mb-4 text-gray-700">已連結的LINE帳號資訊</h4>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
-                                        <i className="fa fa-user mr-2 text-primary"></i>
-                                        LINE 姓名
-                                    </label>
-                                    <p className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 font-medium">
-                                        {userName}
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
-                                        <i className="fa fa-id-card-o mr-2 text-primary"></i>
-                                        LINE User ID
-                                    </label>
-                                    <div className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 flex justify-between items-center">
-                                        <span className="truncate mr-4" title={userId}>{userId}</span>
-                                        <button 
-                                            onClick={handleIdCopy} 
-                                            className="text-gray-500 hover:text-primary transition-colors flex-shrink-0"
-                                            aria-label="複製User ID"
-                                        >
-                                            <i className="fa fa-clone fa-lg"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {renderBindingStatus()}
-                </div>
-            );
-        };
-
-        // --- components/Header.tsx ---
-        const Header = ({ onShare }) => {
-            const handleShare = async () => {
-                if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
-                    try {
-                        await window.liff.shareTargetPicker([
-                            {
-                                type: 'text',
-                                text: '掃描QR碼加入我們的LINE好友！',
-                            },
-                        ]);
-                        onShare('分享內容已送出！');
-                    } catch (error) {
-                        console.error('Share failed:', error);
-                        // User cancelled the share picker
-                        if (error.code !== 'CANCEL') {
-                           onShare('分享失敗，請稍後再試。');
-                        }
-                    }
-                } else {
-                    onShare('此功能需要在LINE應用程式中開啟才能使用。');
-                }
-            };
-            
-            return (
-                <header className="bg-white shadow-sm sticky top-0 z-10">
-                    <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                                <i className="fa fa-comment text-white text-xl"></i>
-                            </div>
-                            <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
-                        </div>
-                        <div>
-                            <button 
-                                onClick={handleShare}
-                                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center"
-                            >
-                                <i className="fa fa-share-alt mr-2"></i>分享
-                            </button>
-                        </div>
-                    </div>
-                </header>
-            );
-        };
-
-        // --- App.tsx ---
-        const App = () => {
-            const [toastInfo, setToastInfo] = useState({ show: false, message: '' });
-            const [bindingStatus, setBindingStatus] = useState(BindingStatus.Idle);
-            const [userName, setUserName] = useState('');
-            const [userId, setUserId] = useState('');
-            const [errorMessage, setErrorMessage] = useState('');
-            const [debugInfo, setDebugInfo] = useState('');
-
-            const triggerToast = useCallback((message) => {
-                setToastInfo({ show: true, message });
-                setTimeout(() => {
-                    setToastInfo({ show: false, message: '' });
-                }, 3000);
-            }, []);
-
-            useEffect(() => {
-                const initializeLiffAndBindUser = async () => {
-                    console.log('[DEBUG] Starting LIFF initialization...');
-                    let responseText = ''; // To store raw response for debugging
-                    try {
-                        if (!window.liff) throw new Error('LIFF SDK is not available.');
-                        
-                        await window.liff.init({ liffId: APP_CONFIG.LIFF_ID });
-
-                        if (!window.liff.isLoggedIn()) {
-                            window.liff.login();
-                            return;
-                        }
-                        
-                        setBindingStatus(BindingStatus.Syncing);
-                        const profile = await window.liff.getProfile();
-                        if (!profile?.userId) throw new Error('Failed to get a valid LINE profile.');
-
-                        setUserName(profile.displayName || '');
-                        setUserId(profile.userId);
-
-                        if (sessionStorage.getItem('line_user_bound_session')) {
-                            console.log('[DEBUG] User already bound in this session.');
-                            setBindingStatus(BindingStatus.Success);
-                            return;
-                        }
-                        
-                        const payload = {
-                            source: 'line_web_app',
-                            customerName: profile.displayName || '',
-                            customerLineId: profile.userId,
-                        };
-                        
-                        const response = await fetch(APP_CONFIG.SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'cors',
-                            cache: 'no-cache',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Use text/plain for Apps Script
-                            body: JSON.stringify(payload),
-                            redirect: 'follow'
-                        });
-                        
-                        responseText = await response.text();
-                        console.log('[DEBUG] Raw server response:', responseText);
-
-                        if (!response.ok) {
-                           throw new Error(`Server returned status ${response.status}.`);
-                        }
-                        
-                        const result = JSON.parse(responseText);
-                        if (result.status !== 'success') {
-                            throw new Error(result.message || 'Backend processing failed.');
-                        }
-
-                        sessionStorage.setItem('line_user_bound_session', 'true');
-                        setBindingStatus(BindingStatus.Success);
-
-                    } catch (error) {
-                        console.error('[FATAL] Process failed:', error);
-                        setErrorMessage(error.message);
-                        setDebugInfo(responseText || error.toString());
-                        setBindingStatus(BindingStatus.Error);
-                    }
-                };
-
-                const start = () => {
-                    initializeLiffAndBindUser().catch(err => {
-                        console.error('[FATAL] Unhandled error in initialization:', err);
-                        setErrorMessage('A critical error occurred.');
-                        setDebugInfo(err.toString());
-                        setBindingStatus(BindingStatus.Error);
-                    });
-                };
-
-                // Use liff.ready for safer initialization
-                if (window.liff?.ready) {
-                    window.liff.ready.then(start);
-                } else {
-                    // Fallback for slower network where liff object might not be ready
-                    window.addEventListener('load', () => window.liff.ready.then(start), { once: true });
-                }
-
-            }, []);
-
-            return (
-                <div className="min-h-screen flex flex-col">
-                    <Header onShare={triggerToast} />
-                    <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
-                        <div className="max-w-3xl mx-auto">
-                            <div className="text-center mb-10">
-                                <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
-                                <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
-                            </div>
-                            <QRCodeSection 
-                                onCopy={triggerToast} 
-                                bindingStatus={bindingStatus} 
-                                userName={userName} 
-                                userId={userId} 
-                                errorMessage={errorMessage}
-                                debugInfo={debugInfo}
-                            />
-                            <FlowDiagram />
-                        </div>
-                    </main>
-                    <Footer />
-                    <Toast message={toastInfo.message} show={toastInfo.show} />
-                </div>
-            );
-        };
-
-        // --- index.tsx (Mounting Logic) ---
-        const rootElement = document.getElementById('root');
-        if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('opacity-100');
+            setTimeout(() => toast.classList.remove('opacity-100'), 3000);
         }
 
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          <React.StrictMode>
-            <App />
-          </React.StrictMode>
-        );
+        function setStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <p class="flex items-center justify-center ${isError ? 'text-red-500' : 'text-green-500'}">
+                    <i class="fa ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>
+                    ${message}
+                </p>`;
+        }
+
+        function handleShare() {
+            if (!window.liff || !window.liff.isInClient()) {
+                console.error('Share failed: Not in LINE client');
+                showToast('分享失敗，請在 LINE 中使用');
+                return;
+            }
+            window.liff.shareTargetPicker([{
+                type: 'text',
+                text: `加入我們的 LINE 好友！掃描 QR Code 或點擊連結：${LINE_ADD_FRIEND_URL}`
+            }]).then(() => {
+                console.log('Share successful');
+                showToast('分享成功！');
+            }).catch(error => {
+                console.error('Share failed:', error.message);
+                showToast('分享失敗，請稍後再試');
+            });
+        }
+
+        async function initializeLiffAndBindUser() {
+            let retryCount = 0;
+            while (retryCount < MAX_RETRIES) {
+                try {
+                    console.log('Initializing LIFF with ID:', LIFF_ID);
+                    if (!window.liff) {
+                        throw new Error('LIFF SDK not loaded');
+                    }
+                    await window.liff.init({ liffId: LIFF_ID });
+                    console.log('LIFF initialized successfully');
+
+                    if (!window.liff.isLoggedIn()) {
+                        console.log('User not logged in, redirecting to LINE login');
+                        window.liff.login();
+                        return;
+                    }
+
+                    document.getElementById('status').innerHTML = `
+                        <p class="text-blue-500 flex items-center justify-center">
+                            <i class="fa fa-spinner fa-spin mr-2"></i>
+                            正在連結...
+                        </p>`;
+                    console.log('Fetching LINE user profile');
+                    const profile = await window.liff.getProfile();
+                    console.log('LINE profile received:', JSON.stringify(profile));
+
+                    if (!profile || !profile.userId || typeof profile.userId !== 'string') {
+                        throw new Error('Invalid LINE user profile or missing userId');
+                    }
+
+                    const payload = {
+                        source: 'line_web_app',
+                        customerName: profile.displayName || '',
+                        customerLineId: profile.userId,
+                        customerPhone: '',
+                        pictureUrl: profile.pictureUrl || ''
+                    };
+                    console.log('Sending POST request with payload:', JSON.stringify(payload));
+
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        redirect: 'follow'
+                    });
+                    console.log('POST response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('POST request failed:', errorText);
+                        throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('POST response data:', JSON.stringify(result));
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'Backend processing failed');
+                    }
+
+                    setStatus('帳號連結成功！');
+                    showToast('帳號連結成功');
+                    return;
+                } catch (error) {
+                    retryCount++;
+                    console.warn(`Attempt ${retryCount} failed: ${error.message}`);
+                    if (retryCount >= MAX_RETRIES) {
+                        console.error('LIFF initialization or binding failed after max retries:', error.message);
+                        setStatus(error.message || '帳號連結失敗，請稍後再試', true);
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+                }
+            }
+        }
+
+        // Initialize LIFF and bind user
+        initializeLiffAndBindUser();
+
+        // Add share button event listener
+        document.getElementById('shareButton').addEventListener('click', handleShare);
     </script>
 </body>
 </html>
