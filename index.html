@@ -56,6 +56,7 @@
       }
     }
     </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-gray-50 font-sans text-dark">
     <div id="root"></div>
@@ -259,14 +260,13 @@
             }, []);
 
             useEffect(() => {
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywuAXzTlMPVAjhKga1NP9FO19SwNl20lM8YCs_llflZz2fsY3pKV1jajV9J9mjqvqGmQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrFPHb5RxQL0fG9DEoAensztcppYJ3F-9uwVExnGjFS2dK6iy-n5GHtksqFvAYybc/exec';
                 const LIFF_ID = '2008276630-bYNjwMx7';
 
                 const initializeLiffAndBindUser = async () => {
                     try {
                         const liff = window.liff;
                         if (!liff) {
-                            console.error('LIFF SDK not found.');
                             setBindingStatus('error');
                             return;
                         }
@@ -289,7 +289,6 @@
                             return;
                         }
                         
-                        // **FIX:** Simplified payload to send only necessary data for user binding.
                         const payload = {
                             source: 'line_web_app',
                             customerName: profile.displayName,
@@ -300,23 +299,15 @@
                             method: 'POST',
                             cache: 'no-cache',
                             headers: {
-                              // Use text/plain to avoid CORS preflight issues with Google Apps Script
                               'Content-Type': 'text/plain;charset=utf-8',
                             },
                             body: JSON.stringify(payload)
                         });
 
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            console.error('Failed to send data to Google Sheet:', response.status, errorText);
-                            throw new Error(`Server responded with status ${response.status}`);
-                        }
+                        if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
 
                         const result = await response.json();
-                        if (result.status !== 'success') {
-                            console.error('Google Sheet script returned an error:', result.message);
-                            throw new Error(result.message || 'Unknown error from script');
-                        }
+                        if (result.status !== 'success') throw new Error(result.message || 'Unknown error from script');
 
                         sessionStorage.setItem('line_user_bound_session', 'true');
                         setBindingStatus('success');
@@ -365,5 +356,6 @@
           </React.StrictMode>
         );
     </script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
