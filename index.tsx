@@ -55,6 +55,19 @@ function sanitizeText(text) {
   return text.trim().replace(/[<>]/g, '');
 }
 
+function normalizeText(text) {
+  if (typeof text !== 'string') return '';
+  return text.replace(/[０-９ｘＸ＊，]/g, function(s) {
+    const map = {
+      '０': '0', '１': '1', '２': '2', '３': '3', '４': '4',
+      '５': '5', '６': '6', '７': '7', '８': '8', '９': '9',
+      'ｘ': 'x', 'Ｘ': 'X', '＊': '*', '，': ','
+    };
+    return map[s];
+  });
+}
+
+
 function verifyWebhookSignature(body, signature) {
   try {
     var crypto = Utilities.computeHmacSha256Signature(body, CONFIG.channelSecret);
@@ -125,6 +138,74 @@ function getSheetData(sheetName) {
   }
 }
 
+function saveOrder(orderData) {
+  try {
+    var sheet = getSheet("orders");
+    if (!sheet) throw new Error("Unable to get orders sheet.");
+    
+    var orderId = generateOrderId();
+    var now = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+    
+    var row = [
+      orderId,
+      orderData.source || "UNKNOWN",
+      orderData.userId || "unknown",
+      orderData.lineUserId || "",
+      orderData.customerName || "",
+      formatPhone(orderData.customerPhone) || "",
+      orderData.items || "",
+      orderData.total || 0,
+      orderData.pickupTime || now,
+      orderData.notes || "",
+      now,
+      "已確認"
+    ];
+    
+    sheet.appendRow(row);
+    logMessage("Order saved successfully: " + orderId, orderData.userId);
+    
+    var ownerMessage = `🔔 您有新訂單！\n\n訂單編號：${orderId}\n顧客：${orderData.customerName || 'LINE 用戶'}\n手機：${formatPhone(orderData.customerPhone) || '未綁定'}\n餐點：${orderData.items}\n總金額：$${orderData.total}\n備註：${orderData.notes || '無'}`;
+    pushMessage(CONFIG.ownerLineUserId, ownerMessage);
+    
+    return { success: true, orderId: orderId };
+  } catch (error) {
+    logMessage("Failed to save order: " + error.message, orderData.userId);
+    return { success: false, error: error.message };
+  }
+}
+
+function saveLineOrder(lineUserId, phone, items, total, notes) {
+  var profile = getLineProfile(lineUserId);
+  var orderData = {
+    source: "LINE",
+    userId: lineUserId,
+    lineUserId: lineUserId,
+    customerName: profile ? profile.displayName : "LINE User",
+    customerPhone: phone,
+    items: items,
+    total: total,
+    notes: notes
+  };
+  return saveOrder(orderData);
+}
+
+function getUserPhone(lineUserId) {
+  try {
+    var sheet = getSheet("users");
+    if (!sheet) return null;
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === lineUserId) {
+        return data[i][2]; 
+      }
+    }
+    return null;
+  } catch (error) {
+    logMessage("Failed to get user phone: " + error.message, lineUserId);
+    return null;
+  }
+}
+
 function saveUser(lineUserId, lineDisplayName, phone) {
   try {
     var sheet = getSheet("users");
@@ -158,6 +239,7 @@ function saveUser(lineUserId, lineDisplayName, phone) {
   }
 }
 
+// ==================== LINE 服務 ====================
 function pushMessage(userId, message) {
   try {
     if (!userId) return false;
@@ -205,18 +287,138 @@ function getLineProfile(userId) {
   }
 }
 
+// ==================== 命令處理 ====================
+function handleMenu() {
+  var menuData = getSheetData("menu");
+  var menuText = "📋 " + CONFIG.restaurant.name + " 菜單\n\n";
+  
+  if (menuData.length === 0) {
+    menuText += "⚠️ 菜單暫時無法載入，請稍後再試。\n";
+  } else {
+    var categories = {};
+    menuData.forEach(item => {
+      if (!categories[item["類別"]]) {
+        categories[item["類別"]] = [];
+      }
+      categories[item["類別"]].push(item);
+    });
+    
+    for (var category in categories) {
+      menuText += `【${category}】\n`;
+      categories[category].forEach(item => {
+        menuText += `${item["編號"]}. ${item["名稱"]} - $${item["價格"]}\n`;
+      });
+      menuText += "\n";
+    }
+  }
+  
+  menuText += "📝 訂餐格式：1 x2, 4 x1\n";
+  menuText += "💡 可加備註：1 x2 備註不要香菜\n";
+  menuText += "⏰ 營業時間：" + CONFIG.restaurant.openingHours;
+  
+  return menuText;
+}
+
+function handleOrder(orderText, lineUserId) {
+  try {
+    var normalizedOrderText = normalizeText(orderText);
+    var menuData = getSheetData("menu");
+    if (menuData.length === 0) return "❌ 菜單載入失敗，無法訂餐。";
+    
+    var userPhone = getUserPhone(lineUserId);
+    var items = [];
+    var total = 0;
+    var notes = "";
+    
+    var partsWithNotes = normalizedOrderText.split('備註');
+    if (partsWithNotes.length > 1) {
+      normalizedOrderText = partsWithNotes[0].trim();
+      notes = sanitizeText(partsWithNotes[1]);
+    }
+    
+    var parts = normalizedOrderText.split(/[,]/);
+    var hasValidItems = false;
+    
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].trim();
+      if (!part) continue;
+      
+      var match = part.match(/(\d+)\s*[xX*]\s*(\d+)/);
+      if (match) {
+        var itemId = parseInt(match[1]);
+        var quantity = parseInt(match[2]);
+        
+        if (quantity <= 0 || isNaN(quantity) || quantity > 50) return `❌ 數量錯誤：${part}`;
+        
+        var menuItem = menuData.find(item => item["編號"] == itemId);
+        if (!menuItem) return `❌ 未知的餐點編號：${itemId}`;
+        
+        var itemTotal = menuItem["價格"] * quantity;
+        total += itemTotal;
+        items.push(menuItem["名稱"] + " x" + quantity);
+        hasValidItems = true;
+      }
+    }
+
+    if (!hasValidItems) return "❌ 未找到有效訂單項目。請使用格式：1 x2, 4 x1";
+
+    var saveResult = saveLineOrder(lineUserId, userPhone, items.join(", "), total, notes);
+    if (!saveResult.success) return "❌ 訂單儲存失敗，請稍後重試。";
+
+    var response = `✅ 訂單已確認！\n\n訂單編號：${saveResult.orderId}\n` +
+                   `🍽️ 內容：\n${items.join("\n")}\n\n` +
+                   `💵 總金額：$${total}\n` +
+                   (notes ? `📝 備註：${notes}\n` : '') +
+                   `\n📍 ${CONFIG.restaurant.address}\n` +
+                   `📞 ${CONFIG.restaurant.phone}\n`;
+
+    if (!userPhone) response += "\n⚠️ 提醒：您尚未綁定手機，請使用「綁定 0912345678」進行綁定。";
+    
+    return response;
+  } catch (error) {
+    logMessage("Failed to handle order: " + error.message, lineUserId);
+    return "❌ 系統錯誤，訂單處理失敗。";
+  }
+}
+
+function handleBind(bindText, lineUserId) {
+  try {
+    var normalizedBindText = normalizeText(bindText);
+    var phone = normalizedBindText.replace(/^綁定\s*/, "").trim().replace(/[^\d]/g, "");
+    if (!validatePhone(phone)) return "❌ 手機格式錯誤，請使用：綁定 0912345678";
+    
+    var profile = getLineProfile(lineUserId);
+    var saveResult = saveUser(lineUserId, profile ? profile.displayName : "", phone);
+    if (!saveResult.success) return "❌ 綁定失敗，請稍後重試。";
+
+    return `✅ 綁定成功！\n📱 手機號碼：${formatPhone(phone)}`;
+  } catch (error) {
+    logMessage("Failed to handle bind: " + error.message, lineUserId);
+    return "❌ 綁定時發生錯誤。";
+  }
+}
+
+function handleHelp() {
+    return "🤖 " + CONFIG.restaurant.name + " 訂餐系統\n\n" +
+           "🍽️ 可用指令：\n" +
+           "• 「菜單」 - 查看完整菜單\n" +
+           "• 「1 x2, 4 x1」 - 下單訂餐\n" +
+           "• 「綁定 0912345678」 - 綁定手機號碼\n" +
+           "• 「幫助」 - 顯示此說明";
+}
+
+
 function handleUserProfile(data) {
     try {
         const lineUserId = data.customerLineUserId || data.customerLineId;
-        if (!lineUserId) {
-            return { status: "error", message: "Missing LINE User ID" };
-        }
+        if (!lineUserId) return { status: "error", message: "Missing LINE User ID" };
+        
         const displayName = data.customerDisplayName || data.customerName;
         const phone = data.customerPhone || "";
         const saveResult = saveUser(lineUserId, displayName, phone);
-        if (!saveResult.success) {
-            return { status: "error", message: "Failed to save user data: " + saveResult.error };
-        }
+
+        if (!saveResult.success) return { status: "error", message: "Failed to save user data: " + saveResult.error };
+        
         logMessage("LIFF user binding successful: " + lineUserId, lineUserId);
         return { status: "success", message: "User data has been bound" };
     } catch (error) {
@@ -232,12 +434,14 @@ function doPost(e) {
     var body = e.postData.contents;
     var data = JSON.parse(body);
 
+    // 處理來自 LIFF App 的請求
     if (data.source) {
       logMessage("Received data from web source: " + data.source, data.customerLineUserId || data.customerLineId);
       var result = handleUserProfile(data);
       return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // 處理來自 LINE Webhook 的請求
     var signature = e.headers['x-line-signature'] || e.headers['X-Line-Signature'];
     if (data.events && signature) {
       if (!verifyWebhookSignature(body, signature)) {
@@ -247,14 +451,34 @@ function doPost(e) {
 
       data.events.forEach(function(event) {
         var lineUserId = event.source.userId;
-        if (!lineUserId) return;
+        var replyToken = event.replyToken;
+        if (!lineUserId || !replyToken) return;
 
+        // 處理加入好友事件
         if (event.type === "follow") {
           var profile = getLineProfile(lineUserId);
           var displayName = profile ? profile.displayName : "";
           logMessage("User followed: " + lineUserId + ", Name: " + displayName, lineUserId);
           saveUser(lineUserId, displayName, "");
-          replyToLine(event.replyToken, `🎉 感謝您加入 ${CONFIG.restaurant.name}！\n請點擊「立即訂餐」開始點餐，或使用「綁定 0912345678」綁定手機號碼。\n立即訂餐：https://liff.line.me/2008276630-bYNjwMx7`);
+          replyToLine(replyToken, `🎉 感謝您加入 ${CONFIG.restaurant.name}！\n請點擊「立即訂餐」開始點餐，或使用「綁定 0912345678」綁定手機號碼。\n立即訂餐：https://liff.line.me/2008276630-bYNjwMx7`);
+        
+        // 處理訊息事件
+        } else if (event.type === "message" && event.message.type === "text") {
+            var messageText = sanitizeText(event.message.text);
+            logMessage("Received message: " + messageText, lineUserId);
+            var response;
+            var lowerText = messageText.toLowerCase();
+
+            if (lowerText === "菜單" || lowerText === "menu") {
+                response = handleMenu();
+            } else if (lowerText.startsWith("綁定")) {
+                response = handleBind(messageText, lineUserId);
+            } else if (lowerText === "幫助" || lowerText === "help") {
+                response = handleHelp();
+            } else {
+                response = handleOrder(messageText, lineUserId);
+            }
+            replyToLine(replyToken, response);
         }
       });
       return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
