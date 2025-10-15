@@ -1,11 +1,8 @@
-// FIX: Declare Google Apps Script global variables to resolve type errors
-// when the type definitions are not available in the environment.
+// Fix: Add declarations for Google Apps Script global objects to resolve TypeScript errors.
+declare var Utilities: any;
 declare var SpreadsheetApp: any;
 declare var UrlFetchApp: any;
 declare var ContentService: any;
-declare var Utilities: any;
-declare var HtmlService: any;
-declare var ScriptApp: any;
 
 // ==================== 配置設定 ====================
 var CONFIG = {
@@ -410,21 +407,28 @@ function handleHelp() {
 
 function handleUserProfile(data) {
     try {
-        const lineUserId = data.customerLineUserId || data.customerLineId;
-        if (!lineUserId) return { status: "error", message: "Missing LINE User ID" };
+        const lineUserId = data.customerLineId;
+        const displayName = data.customerName;
+
+        if (!lineUserId) {
+            logMessage("User profile request is missing a LINE User ID.", "system");
+            return { status: "error", message: "Missing LINE User ID in the received data." };
+        }
         
-        const displayName = data.customerDisplayName || data.customerName;
         const phone = data.customerPhone || "";
         const saveResult = saveUser(lineUserId, displayName, phone);
 
-        if (!saveResult.success) return { status: "error", message: "Failed to save user data: " + saveResult.error };
+        if (!saveResult.success) {
+            logMessage(`Failed to save user data for ${lineUserId}. Error: ${saveResult.error}`, lineUserId);
+            return { status: "error", message: "Failed to save user data to the spreadsheet." };
+        }
         
         logMessage("LIFF user binding successful: " + lineUserId, lineUserId);
-        return { status: "success", message: "User data has been bound" };
+        return { status: "success", message: "User data has been bound." };
     } catch (error) {
-        const userId = data.customerLineUserId || data.customerLineId || "unknown";
-        logMessage("Failed to handle user profile: " + error.message, userId);
-        return { status: "error", message: "System error: " + error.message };
+        const userId = data.customerLineId || "unknown";
+        logMessage("An unexpected error occurred in handleUserProfile: " + error.message, userId);
+        return { status: "error", message: "A system error occurred while processing user data." };
     }
 }
 
@@ -434,27 +438,27 @@ function doPost(e) {
     var body = e.postData.contents;
     var data = JSON.parse(body);
 
-    // 處理來自 LIFF App 的請求
+    // Route 1: Request from LIFF App (has a 'source' property)
     if (data.source) {
-      logMessage("Received data from web source: " + data.source, data.customerLineUserId || data.customerLineId);
+      logMessage("Received data from web source: " + data.source, data.customerLineId);
       var result = handleUserProfile(data);
       return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // 處理來自 LINE Webhook 的請求
-    var signature = e.headers['x-line-signature'] || e.headers['X-Line-Signature'];
-    if (data.events && signature) {
-      if (!verifyWebhookSignature(body, signature)) {
-        logMessage("Webhook signature verification failed.", "system");
-        return ContentService.createTextOutput("Invalid signature").setMimeType(ContentService.MimeType.TEXT);
+    } 
+    // Route 2: Request from LINE Webhook (has an 'events' property)
+    else if (data.events) {
+      var signature = e.headers['x-line-signature'] || e.headers['X-Line-Signature'];
+      if (!signature || !verifyWebhookSignature(body, signature)) {
+        logMessage("Webhook signature verification failed or signature missing.", "system");
+        // It's better to return OK for verification fails to prevent LINE from retrying.
+        return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
       }
-
+      
       data.events.forEach(function(event) {
         var lineUserId = event.source.userId;
         var replyToken = event.replyToken;
         if (!lineUserId || !replyToken) return;
 
-        // 處理加入好友事件
+        // Handle follow event
         if (event.type === "follow") {
           var profile = getLineProfile(lineUserId);
           var displayName = profile ? profile.displayName : "";
@@ -462,7 +466,7 @@ function doPost(e) {
           saveUser(lineUserId, displayName, "");
           replyToLine(replyToken, `🎉 感謝您加入 ${CONFIG.restaurant.name}！\n請點擊「立即訂餐」開始點餐，或使用「綁定 0912345678」綁定手機號碼。\n立即訂餐：https://liff.line.me/2008276630-bYNjwMx7`);
         
-        // 處理訊息事件
+        // Handle text message event
         } else if (event.type === "message" && event.message.type === "text") {
             var messageText = sanitizeText(event.message.text);
             logMessage("Received message: " + messageText, lineUserId);
@@ -483,10 +487,11 @@ function doPost(e) {
       });
       return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
     }
-    
-    logMessage("Unknown POST request type.", "system");
-    return ContentService.createTextOutput("Unknown request type").setMimeType(ContentService.MimeType.TEXT);
-
+    // Fallback for unknown requests
+    else {
+      logMessage("Unknown POST request type.", "system");
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Unknown request type" })).setMimeType(ContentService.MimeType.JSON);
+    }
   } catch (error) {
     logMessage("doPost Error: " + error.message, "system");
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "System error: " + error.message })).setMimeType(ContentService.MimeType.JSON);
