@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 二維碼</title>
-    <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         style-src 'self' 'unsafe-inline';
@@ -13,9 +12,7 @@
         connect-src 'self' https://script.google.com https://script.googleapis.com https://api.line.me;
         font-src 'self' data:;
     ">
-    <!-- Local Tailwind CSS -->
     <link href="/css/tailwind.min.css" rel="stylesheet">
-    <!-- Inline Font Awesome CSS -->
     <style>
         @font-face {
             font-family: 'FontAwesome';
@@ -37,11 +34,9 @@
         .fa-exclamation-circle:before { content: "\f06a"; }
         .fa-share:before { content: "\f064"; }
     </style>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -107,9 +102,7 @@
             while (retryCount < MAX_RETRIES) {
                 try {
                     console.log('Initializing LIFF with ID:', LIFF_ID);
-                    if (!window.liff) {
-                        throw new Error('LIFF SDK not loaded');
-                    }
+                    if (!window.liff) throw new Error('LIFF SDK not loaded');
                     await window.liff.init({ liffId: LIFF_ID });
                     console.log('LIFF initialized successfully');
 
@@ -151,14 +144,22 @@
                     });
                     console.log('POST response status:', response.status);
 
+                    const responseText = await response.text();
+                    console.log('POST response text:', responseText);
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('POST request failed:', errorText);
-                        throw new Error(`Server responded with status: ${response.status} - ${errorText}`);
+                        console.error('POST request failed:', responseText);
+                        throw new Error(`Server responded with status: ${response.status} - ${responseText}`);
                     }
 
-                    const result = await response.json();
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Failed to parse response:', parseError.message);
+                        throw new Error('Invalid response format from server');
+                    }
                     console.log('POST response data:', JSON.stringify(result));
+
                     if (result.status !== 'success') {
                         throw new Error(result.message || 'Backend processing failed');
                     }
@@ -179,10 +180,7 @@
             }
         }
 
-        // Initialize LIFF and bind user
         initializeLiffAndBindUser();
-
-        // Add share button event listener
         document.getElementById('shareButton').addEventListener('click', handleShare);
     </script>
 </body>
