@@ -21,7 +21,7 @@
 <body>
     <div id="status" class="status"></div>
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby074u33BFOclcfAp74nO2_fF4i4xHjAJp5Z7b6g1hfYFiMxq4TyX1KWuk_iIq6tsNBEg/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwllylbSx2TxUfF08dkEZsjx3SSdoMgJlWCRclhHWwLVqBo2B3ZRDy3xUd1SNfh8xAsKg/exec';
         const LIFF_ID = '2008276630-bYNjwMx7';
         const MAX_RETRIES = 3;
 
@@ -48,6 +48,7 @@
 
                     setStatus('正在連結...', 'loading');
                     console.log('Fetching LINE user profile');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     const profile = await window.liff.getProfile();
                     console.log('LINE profile received:', JSON.stringify(profile));
 
