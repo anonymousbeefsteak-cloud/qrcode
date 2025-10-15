@@ -1,5 +1,5 @@
 {
-  "name": "Copy 2",
-  "description": "A web application to display a LINE QR code for adding contacts or joining groups, built with React and Tailwind CSS. It provides a clear, visually appealing interface with instructions and a copy-to-clipboard feature for the LINE ID.",
+  "name": "LINE Friend Adder",
+  "description": "A simple page to encourage users to add a LINE Official Account, built with React and the LIFF SDK. It captures user profile information upon visit and records it in a Google Sheet.",
   "requestFramePermissions": []
 }

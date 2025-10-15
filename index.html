@@ -1,61 +1,136 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>無名牛排 - 加入好友</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-<body style="margin:0;padding:20px;background:#f0f0f0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
-    <div style="background:white;padding:30px;border-radius:15px;text-align:center;max-width:400px;">
-        <div style="font-size:48px;">🥩</div>
-        <h2>無名牛排</h2>
-        <p>點擊按鈕加入官方帳號</p>
-        
-        <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
-             style="max-width:200px;margin:15px 0;border:2px solid #ddd;border-radius:10px;">
-        <p><strong>LINE ID: @561zotgq</strong></p>
-        
-        <button onclick="joinLine()" 
-                style="background:#00B900;color:white;border:none;padding:15px 30px;font-size:18px;border-radius:10px;cursor:pointer;width:100%;margin:20px 0;">
-            加入好友
-        </button>
-        
-        <div id="status" style="margin:15px 0;padding:10px;border-radius:5px;display:none;"></div>
-    </div>
-
-    <script>
-        async function initialize() {
-            try {
-                await liff.init({liffId: '2008276630-bYNjwMx7'});
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-                // 靜默記錄 - 不顯示狀態
-                const profile = await liff.getProfile();
-                silentRecordUser(profile);
-            } catch (error) {
-                console.log('初始化完成');
-            }
-        }
-
-        function silentRecordUser(profile) {
-            // 使用 Image 物件發送請求 (不會被 CORS 阻擋)
-            const url = `https://script.google.com/macros/s/AKfycbzaLgTqrmFqyINkHTQIwa049kLzkIQXRdq3nEji-HjWITO1lbSQ0z0P_Qfr4GNzgi0m3w/exec?userId=${encodeURIComponent(profile.userId)}&displayName=${encodeURIComponent(profile.displayName)}&timestamp=${encodeURIComponent(new Date().toISOString())}`;
-            const img = new Image();
-            img.src = url;
-        }
-
-        function joinLine() {
-            if (liff.isInClient()) {
-                liff.openWindow({url: 'line://ti/p/@561zotgq'});
-            } else {
-                window.open('https://line.me/R/ti/p/@561zotgq', '_blank');
-            }
-        }
-
-        window.onload = initialize;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" charset="utf-8"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+      }
+    }
     </script>
+    <style>
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.8s ease-out forwards;
+      }
+    </style>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="text/babel" data-type="module">
+      import React, { useEffect, useCallback } from 'react';
+      import ReactDOM from 'react-dom/client';
+
+      // Constants
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfsVssVGXXBiRN1q704WGwFv3cuj6vVOWH3ER19tS7eLwbvPOokCSiwQsRm5t7Eq9mpg/exec';
+      const LIFF_ID = '2008276630-bYNjwMx7';
+      const LINE_ADD_URL_DESKTOP = 'https://line.me/R/ti/p/@561zotgq';
+      const LINE_ADD_URL_MOBILE = 'line://ti/p/@561zotgq';
+      const LINE_ID = '@561zotgq';
+      const QR_CODE_URL = 'https://qr-official.line.me/sid/L/561zotgq.png';
+
+      const App = () => {
+        const recordUserData = useCallback((profile) => {
+          const params = new URLSearchParams({
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl || '',
+            timestamp: new Date().toISOString()
+          });
+
+          const trackingUrl = `${SCRIPT_URL}?${params.toString()}`;
+          const img = new Image();
+          img.src = trackingUrl;
+          console.log('Attempting to record user data for:', profile.displayName);
+        }, []);
+
+        useEffect(() => {
+          const initializeLiff = async () => {
+            try {
+              await window.liff.init({ liffId: LIFF_ID });
+              if (!window.liff.isLoggedIn()) {
+                window.liff.login();
+                return;
+              }
+              
+              const profile = await window.liff.getProfile();
+              recordUserData(profile);
+            } catch (error) {
+              console.error('LIFF initialization or profile fetch failed:', error);
+            }
+          };
+          
+          if (window.liff) {
+            initializeLiff();
+          } else {
+              console.error('LIFF SDK not found. Please ensure the script is loaded.');
+          }
+        }, [recordUserData]);
+
+        const handleJoinClick = () => {
+          if (window.liff && window.liff.isInClient()) {
+            window.liff.openWindow({ url: LINE_ADD_URL_MOBILE });
+          } else {
+            window.open(LINE_ADD_URL_DESKTOP, '_blank');
+          }
+        };
+
+        return (
+          <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] min-h-screen w-full flex justify-center items-center font-sans p-5">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full animate-fade-in">
+              <div className="text-6xl mb-5" role="img" aria-label="steak">🥩</div>
+              <h2 className="text-3xl font-bold text-gray-800">無名牛排</h2>
+              <p className="text-gray-600 mt-2 mb-6">立即加入官方帳號，獲取最新優惠！</p>
+              
+              <div className="qr-code">
+                <img 
+                  src={QR_CODE_URL}
+                  alt="LINE QR Code" 
+                  className="max-w-[200px] mx-auto my-4 border-4 border-gray-100 rounded-xl"
+                />
+                <p className="font-semibold text-gray-700"><strong>LINE ID: {LINE_ID}</strong></p>
+              </div>
+              
+              <button 
+                className="bg-[#00B900] hover:bg-[#009900] text-white font-bold py-4 px-8 text-lg rounded-xl cursor-pointer w-full my-5 transition-transform transform hover:scale-105"
+                onClick={handleJoinClick}
+              >
+                加入好友
+              </button>
+              
+              <div className="mt-4 text-xs text-gray-500">
+                <p>加入好友後即可接收最新優惠訊息</p>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const rootElement = document.getElementById('root');
+      if (!rootElement) {
+        throw new Error("Could not find root element to mount to");
+      }
+
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    </script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
