@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE LIFF - Add Friend to Google Sheet</title>
+    <title>LINE LIFF - 無名牛排</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body {
@@ -53,7 +53,7 @@
             try {
                 await liff.init({ liffId: '2008276630-bYNjwMx7' });
                 if (!liff.isLoggedIn()) {
-                    liff.login();
+                    liff.login({ redirectUri: window.location.href });
                 }
             } catch (error) {
                 document.getElementById('status').innerText = 'LIFF Initialization failed: ' + error.message;
@@ -73,13 +73,14 @@
                     timestamp: new Date().toISOString()
                 };
 
-                const response = await fetch('https://script.google.com/macros/s/AKfycbwa6LCKS3fusdApiZ55Q56OPPjgEw_7spxFLno30VNWo1aymGk8I-S95engw9am3Ssesw/exec', {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbzA-UdP-zl4b_zdCiKCjCoc4IrVRSbO_v0pZUO4R3fcsr-SCeRd7FK6sxzCWvWooWlnHA/exec', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(userData),
-                    mode: 'cors'
+                    mode: 'cors',
+                    redirect: 'follow'
                 });
 
                 const result = await response.json();
@@ -93,7 +94,6 @@
             }
         }
 
-        // Initialize LIFF on page load
         window.onload = initializeLiff;
     </script>
 </body>
