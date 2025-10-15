@@ -1,187 +1,69 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 二維碼</title>
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self';
-        style-src 'self' 'unsafe-inline';
-        script-src 'self' https://static.line-scdn.net;
-        img-src 'self' https://qr-official.line.me;
-        connect-src 'self' https://script.google.com https://script.googleapis.com https://api.line.me;
-        font-src 'self' data:;
-    ">
-    <link href="/css/tailwind.min.css" rel="stylesheet">
-    <style>
-        @font-face {
-            font-family: 'FontAwesome';
-            src: url('/fonts/fontawesome-webfont.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        .fa {
-            display: inline-block;
-            font: normal normal normal 14px/1 FontAwesome;
-            font-size: inherit;
-            text-rendering: auto;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        .fa-user-plus:before { content: "\f234"; }
-        .fa-spinner:before { content: "\f110"; }
-        .fa-check-circle:before { content: "\f058"; }
-        .fa-exclamation-circle:before { content: "\f06a"; }
-        .fa-share:before { content: "\f064"; }
-    </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-</head>
-<body class="bg-gray-100 font-sans">
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full text-center">
-            <h1 class="text-2xl font-bold mb-4">加入 LINE 好友</h1>
-            <img id="qrCode" src="https://qr-official.line.me/sid/M/561zotgq.png" alt="LINE QR Code" class="w-48 h-48 mx-auto mb-4">
-            <p class="text-gray-600 mb-4">掃描上方 QR Code 或點擊下方按鈕加入好友</p>
-            <div class="flex justify-center gap-4">
-                <a href="https://line.me/R/ti/p/@561zotgq" target="_blank" rel="noopener noreferrer" class="inline-flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                    <i class="fa fa-user-plus mr-2"></i>加入好友
-                </a>
-                <button id="shareButton" class="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                    <i class="fa fa-share mr-2"></i>分享
-                </button>
-            </div>
-            <div id="status" class="mt-4"></div>
-        </div>
-        <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0"></div>
-    </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Configure Tailwind colors and fonts -->
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlALoE57sVbVEC-RuEN9GRzXkrZ2PB5rhrvP8JupYnp2kN-K3Wgu_arssH8QK3lBsnAQ/exec';
-        const LIFF_ID = '2008276630-bYNjwMx7';
-        const LINE_ADD_FRIEND_URL = 'https://line.me/R/ti/p/@561zotgq';
-        const MAX_RETRIES = 3;
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('opacity-100');
-            setTimeout(() => toast.classList.remove('opacity-100'), 3000);
-        }
-
-        function setStatus(message, isError = false) {
-            const status = document.getElementById('status');
-            status.innerHTML = `
-                <p class="flex items-center justify-center ${isError ? 'text-red-500' : 'text-green-500'}">
-                    <i class="fa ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>
-                    ${message}
-                </p>`;
-        }
-
-        function handleShare() {
-            if (!window.liff || !window.liff.isInClient()) {
-                console.error('Share failed: Not in LINE client');
-                showToast('分享失敗，請在 LINE 中使用');
-                return;
-            }
-            window.liff.shareTargetPicker([{
-                type: 'text',
-                text: `加入我們的 LINE 好友！掃描 QR Code 或點擊連結：${LINE_ADD_FRIEND_URL}`
-            }]).then(() => {
-                console.log('Share successful');
-                showToast('分享成功！');
-            }).catch(error => {
-                console.error('Share failed:', error.message);
-                showToast('分享失敗，請稍後再試');
-            });
-        }
-
-        async function initializeLiffAndBindUser() {
-            let retryCount = 0;
-            while (retryCount < MAX_RETRIES) {
-                try {
-                    console.log('Initializing LIFF with ID:', LIFF_ID);
-                    if (!window.liff) throw new Error('LIFF SDK not loaded');
-                    await window.liff.init({ liffId: LIFF_ID });
-                    console.log('LIFF initialized successfully');
-
-                    if (!window.liff.isLoggedIn()) {
-                        console.log('User not logged in, redirecting to LINE login');
-                        window.liff.login();
-                        return;
-                    }
-
-                    document.getElementById('status').innerHTML = `
-                        <p class="text-blue-500 flex items-center justify-center">
-                            <i class="fa fa-spinner fa-spin mr-2"></i>
-                            正在連結...
-                        </p>`;
-                    console.log('Fetching LINE user profile');
-                    const profile = await window.liff.getProfile();
-                    console.log('LINE profile received:', JSON.stringify(profile));
-
-                    if (!profile || !profile.userId || typeof profile.userId !== 'string') {
-                        throw new Error('Invalid LINE user profile or missing userId');
-                    }
-
-                    const payload = {
-                        source: 'line_web_app',
-                        customerName: profile.displayName || '',
-                        customerLineId: profile.userId,
-                        customerPhone: '',
-                        pictureUrl: profile.pictureUrl || ''
-                    };
-                    console.log('Sending POST request with payload:', JSON.stringify(payload));
-
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'cors',
-                        cache: 'no-cache',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        redirect: 'follow'
-                    });
-                    console.log('POST response status:', response.status);
-
-                    const responseText = await response.text();
-                    console.log('POST response text:', responseText);
-                    if (!response.ok) {
-                        console.error('POST request failed:', responseText);
-                        throw new Error(`Server responded with status: ${response.status} - ${responseText}`);
-                    }
-
-                    let result;
-                    try {
-                        result = JSON.parse(responseText);
-                    } catch (parseError) {
-                        console.error('Failed to parse response:', parseError.message);
-                        throw new Error('Invalid response format from server');
-                    }
-                    console.log('POST response data:', JSON.stringify(result));
-
-                    if (result.status !== 'success') {
-                        throw new Error(result.message || 'Backend processing failed');
-                    }
-
-                    setStatus('帳號連結成功！');
-                    showToast('帳號連結成功');
-                    return;
-                } catch (error) {
-                    retryCount++;
-                    console.warn(`Attempt ${retryCount} failed: ${error.message}`);
-                    if (retryCount >= MAX_RETRIES) {
-                        console.error('LIFF initialization or binding failed after max retries:', error.message);
-                        setStatus(error.message || '帳號連結失敗，請稍後再試', true);
-                        return;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300', // LINE brand green
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
                 }
             }
         }
-
-        initializeLiffAndBindUser();
-        document.getElementById('shareButton').addEventListener('click', handleShare);
     </script>
+    
+    <!-- Custom utility classes -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Babel for in-browser JSX/TSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import map to load React modules from a CDN -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <div id="root"></div>
+    <!-- The React application is loaded from index.tsx by the framework -->
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
