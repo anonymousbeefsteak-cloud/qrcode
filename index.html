@@ -93,24 +93,6 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
-        .btn-secondary {
-            background: transparent;
-            color: #00B900;
-            border: 2px solid #00B900;
-            padding: 14px 32px;
-            font-size: 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            width: 100%;
-            margin: 10px 0;
-            transition: all 0.3s;
-        }
-        
-        .btn-secondary:hover {
-            background: #00B900;
-            color: white;
-        }
-        
         .status-message {
             margin-top: 20px;
             padding: 15px;
@@ -164,23 +146,18 @@
             border: 2px solid #e9ecef;
         }
         
-        .instructions {
-            text-align: left;
-            background: #fff3cd;
+        .user-info {
+            background: #e8f5e8;
             padding: 15px;
             border-radius: 10px;
-            margin: 20px 0;
-            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+            border-left: 4px solid #00B900;
+            text-align: left;
         }
         
-        .instructions ol {
-            margin-left: 20px;
-            margin-top: 10px;
-        }
-        
-        .instructions li {
-            margin-bottom: 8px;
-            line-height: 1.4;
+        .user-info p {
+            margin: 5px 0;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -190,8 +167,15 @@
         <h2>無名牛排</h2>
         <p class="description">立即加入官方帳號，獲取最新優惠資訊！</p>
         
+        <div id="userInfo" class="user-info" style="display: none;">
+            <p><strong>歡迎！</strong></p>
+            <p>姓名: <span id="userName"></span></p>
+            <p>狀態: <span id="userStatus">載入中...</span></p>
+        </div>
+        
         <div class="qr-code">
-            <img src="https://qr-official.line.me/sid/L/561zotgq.png" alt="LINE QR Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=line://ti/p/@561zotgq'">
+            <img src="https://qr-official.line.me/sid/L/561zotgq.png" alt="LINE QR Code" 
+                 onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=line://ti/p/@561zotgq'">
             <p style="margin-top: 15px; font-size: 14px; color: #666;">掃描 QR Code 加入好友</p>
         </div>
         
@@ -199,21 +183,8 @@
             LINE ID: @561zotgq
         </div>
         
-        <div class="instructions">
-            <strong>加入方式：</strong>
-            <ol>
-                <li>點擊下方「加入好友」按鈕</li>
-                <li>或掃描上方 QR Code</li>
-                <li>或搜尋 LINE ID: @561zotgq</li>
-            </ol>
-        </div>
-        
         <button class="btn-primary" onclick="redirectToLineChat()" id="chatBtn">
             立即加入好友
-        </button>
-        
-        <button class="btn-secondary" onclick="openLineInBrowser()">
-            在瀏覽器中開啟
         </button>
         
         <div id="statusMessage" class="status-message"></div>
@@ -225,11 +196,14 @@
 
     <script>
         const LINE_OFFICIAL_ACCOUNT = '@561zotgq';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxihv6dk9yM8Nss3cyV1gIGnVf2rLKZkUq39pK0KUV-kHym1SpF4Q2e0YX-NdeYOEpzYw/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfsVssVGXXBiRN1q704WGwFv3cuj6vVOWH3ER19tS7eLwbvPOokCSiwQsRm5t7Eq9mpg/exec';
+
+        let userProfile = null;
+        let userRecorded = false;
 
         async function initializeLiff() {
             try {
-                showStatus('正在初始化...', 'info');
+                showStatus('正在初始化 LINE 應用...', 'info');
                 
                 await liff.init({ 
                     liffId: '2008276630-bYNjwMx7'
@@ -241,39 +215,74 @@
                     return;
                 }
                 
+                // 獲取用戶資料
+                userProfile = await liff.getProfile();
+                displayUserInfo(userProfile);
+                
                 // 自動記錄用戶資料
                 await recordUserData();
-                showStatus('準備就緒！點擊按鈕加入好友', 'success');
                 
             } catch (error) {
                 console.error('LIFF 初始化失敗:', error);
-                showStatus('初始化失敗，請重新整理頁面', 'error');
+                showStatus('初始化失敗，請重新整理頁面: ' + error.message, 'error');
             }
         }
 
         async function recordUserData() {
             try {
-                const profile = await liff.getProfile();
+                if (!userProfile) {
+                    console.error('沒有用戶資料可記錄');
+                    return;
+                }
+
+                showStatus('正在記錄用戶資料...', 'info');
+                document.getElementById('userStatus').textContent = '記錄中...';
+
                 const userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
+                    userId: userProfile.userId,
+                    displayName: userProfile.displayName,
+                    pictureUrl: userProfile.pictureUrl || '',
                     timestamp: new Date().toISOString()
                 };
 
-                // 發送資料到 Google Sheets
-                await fetch(SCRIPT_URL, {
+                console.log('發送用戶資料:', userData);
+
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(userData)
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('伺服器回應:', result);
+
+                if (result.status === 'success') {
+                    userRecorded = true;
+                    document.getElementById('userStatus').textContent = result.userExists ? '資料已更新' : '新用戶已記錄';
+                    showStatus('✅ 資料記錄成功！', 'success');
+                } else {
+                    throw new Error(result.message);
+                }
                 
             } catch (error) {
                 console.error('記錄用戶資料失敗:', error);
-                // 不顯示錯誤，因為主要功能是跳轉到聊天室
+                document.getElementById('userStatus').textContent = '記錄失敗';
+                showStatus('⚠️ 資料記錄失敗: ' + error.message, 'error');
             }
+        }
+
+        function displayUserInfo(profile) {
+            const userInfo = document.getElementById('userInfo');
+            const userName = document.getElementById('userName');
+            
+            userName.textContent = profile.displayName;
+            userInfo.style.display = 'block';
         }
 
         function redirectToLineChat() {
@@ -300,26 +309,28 @@
             }, 3000);
         }
 
-        function openLineInBrowser() {
-            window.open(`https://line.me/R/ti/p/${LINE_OFFICIAL_ACCOUNT}`, '_blank');
-            showStatus('在新視窗中開啟官方帳號', 'info');
-        }
-
         function showStatus(message, type) {
             const statusElement = document.getElementById('statusMessage');
             statusElement.textContent = message;
             statusElement.className = 'status-message status-' + type;
             statusElement.style.display = 'block';
+            
+            // 5秒後自動隱藏成功訊息
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
         }
 
         // 頁面載入時自動初始化
         window.onload = initializeLiff;
 
-        // 添加點擊統計（可選）
-        function trackButtonClick() {
-            // 可以在這裡添加點擊統計
-            console.log('用戶點擊加入好友按鈕');
-        }
+        // 添加錯誤處理
+        window.addEventListener('error', function(e) {
+            console.error('全局錯誤:', e.error);
+            showStatus('發生錯誤，請重新整理頁面', 'error');
+        });
     </script>
 </body>
 </html>
