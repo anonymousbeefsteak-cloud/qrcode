@@ -6,150 +6,159 @@
     <title>無名牛排 - 加入好友</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0; padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: Arial, sans-serif;
+            padding: 20px;
         }
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
+            border-radius: 20px;
+            padding: 40px;
             max-width: 400px;
             width: 100%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        .logo { font-size: 48px; margin-bottom: 20px; }
-        .btn {
+        .logo {
+            width: 100px;
+            height: 100px;
+            background: #00B900;
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+        .qr-code {
+            max-width: 200px;
+            height: auto;
+            border-radius: 10px;
+            margin: 20px auto;
+            border: 2px solid #ddd;
+        }
+        .btn-primary {
             background: #00B900;
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 16px 32px;
             font-size: 18px;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             width: 100%;
             margin: 20px 0;
+            font-weight: 600;
         }
-        .btn:hover { background: #009900; }
-        .qr-code img {
-            max-width: 200px;
-            margin: 15px 0;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-        }
-        .status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            display: none;
-        }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
+        .btn-primary:hover { background: #009900; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">🥩</div>
-        <h2>無名牛排</h2>
+        <h1>無名牛排</h1>
         <p>立即加入官方帳號，獲取最新優惠！</p>
         
-        <div class="qr-code">
-            <img src="https://qr-official.line.me/sid/L/561zotgq.png" alt="LINE QR Code">
-            <p><strong>LINE ID: @561zotgq</strong></p>
-        </div>
+        <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
+             alt="LINE QR Code" 
+             class="qr-code">
         
-        <button class="btn" onclick="joinLine()">加入好友</button>
+        <p><strong>LINE ID: @561zotgq</strong></p>
         
-        <div id="status" class="status"></div>
-        
-        <div style="margin-top: 20px; font-size: 12px; color: #666;">
-            <p>加入好友後即可接收最新優惠訊息</p>
-        </div>
+        <button class="btn-primary" onclick="joinLine()">
+            加入好友
+        </button>
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwD6mEAmtC8cSJIfhpU98JFnjfiEqBtBbI2NjlhZxecFPR2S3GB1_lFJsqk3DgEpREZaQ/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLFV3U2wdVT11r-IRRvxPKIerqgdUdmDFdW1gYqvTphPqvOdpGgkzUBCettOcPZGj8vg/exec';
 
-        async function initialize() {
+        async function initializeApp() {
             try {
-                showStatus('初始化中...', 'info');
+                console.log('🚀 初始化 LIFF...');
                 
-                await liff.init({liffId: '2008276630-bYNjwMx7'});
+                await liff.init({ liffId: '2008276630-bYNjwMx7' });
                 
                 if (!liff.isLoggedIn()) {
-                    showStatus('請登入 LINE...', 'info');
+                    console.log('🔐 需要登入，重新導向...');
                     liff.login();
                     return;
                 }
                 
-                // 自動記錄用戶資料
-                const profile = await liff.getProfile();
-                await trackUser(profile);
+                console.log('✅ LIFF 初始化成功');
                 
-                showStatus('準備完成！', 'success');
+                // 獲取用戶資料
+                const profile = await liff.getProfile();
+                console.log('👤 獲取到用戶資料:', profile.displayName);
+                
+                // 記錄用戶資料
+                await recordUserData(profile);
+                
+                console.log('🎉 應用程式準備完成');
                 
             } catch (error) {
-                console.error('初始化錯誤:', error);
-                showStatus('初始化失敗，請重新整理', 'error');
+                console.error('❌ 初始化錯誤:', error);
             }
         }
 
-        function trackUser(profile) {
+        function recordUserData(profile) {
             return new Promise((resolve) => {
-                const params = new URLSearchParams({
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    timestamp: new Date().toISOString()
-                });
+                console.log('📝 開始記錄用戶資料...');
                 
-                const trackingPixel = new Image();
-                
-                trackingPixel.onload = function() {
-                    console.log('✅ 用戶資料記錄成功:', profile.displayName);
-                    resolve();
+                // 構建參數 - 確保使用 encodeURIComponent
+                const params = {
+                    userId: encodeURIComponent(profile.userId),
+                    displayName: encodeURIComponent(profile.displayName),
+                    pictureUrl: encodeURIComponent(profile.pictureUrl || ''),
+                    timestamp: encodeURIComponent(new Date().toISOString())
                 };
                 
-                trackingPixel.onerror = function() {
-                    console.log('⚠️ 追蹤像素載入失敗，但用戶資料可能已記錄');
-                    resolve(); // 仍然解析，因為像素追蹤是次要的
+                console.log('📦 準備發送的參數:', params);
+                
+                // 方法1: 使用 Image 像素追蹤
+                const img = new Image();
+                const queryString = `userId=${params.userId}&displayName=${params.displayName}&pictureUrl=${params.pictureUrl}&timestamp=${params.timestamp}`;
+                
+                console.log('🔗 完整請求 URL:', SCRIPT_URL + '?' + queryString);
+                
+                img.onload = function() {
+                    console.log('✅ 追蹤請求成功');
+                    resolve(true);
                 };
                 
-                trackingPixel.src = SCRIPT_URL + '?' + params.toString();
+                img.onerror = function() {
+                    console.log('⚠️ 追蹤請求失敗');
+                    resolve(false);
+                };
                 
-                console.log('發送用戶資料:', profile.displayName);
+                // 發送請求
+                img.src = SCRIPT_URL + '?' + queryString;
+                
             });
         }
 
         function joinLine() {
+            console.log('🎯 加入 LINE 官方帳號');
+            
             if (liff.isInClient()) {
-                liff.openWindow({url: 'line://ti/p/@561zotgq'});
+                liff.openWindow({ url: 'line://ti/p/@561zotgq' });
             } else {
                 window.open('https://line.me/R/ti/p/@561zotgq', '_blank');
             }
         }
 
-        function showStatus(message, type) {
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = message;
-            statusElement.className = type + ' status';
-            statusElement.style.display = 'block';
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusElement.style.display = 'none';
-                }, 3000);
-            }
-        }
+        // 頁面載入
+        window.addEventListener('load', function() {
+            console.log('📄 頁面載入完成');
+            initializeApp();
+        });
 
-        window.onload = initialize;
     </script>
 </body>
 </html>
