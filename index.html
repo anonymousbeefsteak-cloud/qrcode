@@ -1,282 +1,369 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 - 線上訂餐</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+    <title>LINE 二維碼</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Configure Tailwind colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300', // LINE brand green
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                }
+            }
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .menu-item {
-            margin: 10px 0;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .menu-item label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .form-group {
-            margin: 15px 0;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #00b900;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #009700;
-        }
-        #addFriendBtn {
-            background-color: #007bff;
-        }
-        #addFriendBtn:hover {
-            background-color: #0056b3;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .success {
-            color: green;
-            font-size: 14px;
-            margin-top: 5px;
+    </script>
+    
+    <!-- Custom utility classes -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h1>無名牛排 - 線上訂餐</h1>
-        <div id="menu">
-            <h2>菜單</h2>
-            <div id="menuItems"></div>
-        </div>
-        <div id="orderForm">
-            <h2>訂單資訊</h2>
-            <div class="form-group">
-                <label for="customerName">姓名</label>
-                <input type="text" id="customerName" placeholder="請輸入姓名">
-            </div>
-            <div class="form-group">
-                <label for="customerPhone">手機號碼</label>
-                <input type="text" id="customerPhone" placeholder="0912345678">
-            </div>
-            <div class="form-group">
-                <label for="pickupTime">取餐時間</label>
-                <input type="datetime-local" id="pickupTime">
-            </div>
-            <div class="form-group">
-                <label for="notes">備註</label>
-                <textarea id="notes" placeholder="如：不要香菜"></textarea>
-            </div>
-            <button id="submitOrder">提交訂單</button>
-            <button id="addFriendBtn">加入好友</button>
-            <div id="message"></div>
-        </div>
-    </div>
-
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script>
-        // 配置
-        const CONFIG = {
-            LIFF_ID: '2008276630-bYNjwMx7',
-            API_ENDPOINT: 'YOUR_APPS_SCRIPT_WEB_APP_URL', // 請替換為 Google Apps Script Web 應用程式 URL
-            FRIEND_LINK: 'https://line.me/R/ti/p/@YOUR_LINE_OFFICIAL_ACCOUNT_ID' // 請替換為 LINE 官方帳號好友連結
+    
+    <!-- Babel for in-browser JSX/TSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import map to load React modules from a CDN -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+      }
+    }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <div id="root"></div>
+
+    <!-- The entire React application logic -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useCallback, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
+
+        // --- components/Toast.tsx ---
+        const Toast = ({ message, show }) => {
+            return (
+                <div 
+                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+                >
+                    {message}
+                </div>
+            );
         };
 
-        // 菜單
-        const MENU = [
-            { id: 1, name: "滷肉飯", price: 35, category: "主食" },
-            { id: 2, name: "雞肉飯", price: 40, category: "主食" },
-            { id: 3, name: "蚵仔煎", price: 65, category: "小吃" },
-            { id: 4, name: "大腸麵線", price: 50, category: "湯類" },
-            { id: 5, name: "珍珠奶茶", price: 45, category: "飲料" },
-            { id: 6, name: "鹽酥雞", price: 60, category: "小吃" },
-            { id: 7, name: "甜不辣", price: 40, category: "小吃" },
-            { id: 8, name: "蚵仔酥", price: 70, category: "小吃" },
-            { id: 9, name: "肉圓", price: 45, category: "小吃" },
-            { id: 10, name: "碗粿", price: 35, category: "主食" }
-        ];
+        // --- components/Footer.tsx ---
+        const Footer = () => {
+            return (
+                <footer className="bg-dark text-white py-6">
+                    <div className="container mx-auto px-4 text-center">
+                        <p className="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
+                        <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+                    </div>
+                </footer>
+            );
+        };
 
-        // 初始化 LIFF
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: CONFIG.LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login({ redirectUri: window.location.href });
-                } else {
-                    const profile = await liff.getProfile();
-                    document.getElementById('customerName').value = profile.displayName;
-                    window.customerLineUserId = profile.userId;
-                    window.customerDisplayName = profile.displayName;
-                    saveUserProfile(profile.userId, profile.displayName);
+        // --- components/Instructions.tsx ---
+        const Instructions = () => {
+            return (
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                    <h3 className="text-xl font-bold mb-4 flex items-center">
+                        <i className="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    </h3>
+                    <ol className="space-y-4">
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
+                        </li>
+                    </ol>
+                </div>
+            );
+        };
+
+        // --- components/QRCodeSection.tsx ---
+        const QRCodeSection = ({ onCopy, bindingStatus, userName, userId }) => {
+            const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
+            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
+
+            const handleIdCopy = () => {
+                if (userId) {
+                    navigator.clipboard.writeText(userId);
+                    onCopy();
                 }
-            } catch (error) {
-                showMessage('LIFF 初始化失敗: ' + error.message, 'error');
-            }
-        }
-
-        // 保存用戶資料到後端
-        async function saveUserProfile(userId, displayName) {
-            try {
-                const response = await fetch(CONFIG.API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        source: 'web',
-                        customerLineUserId: userId,
-                        customerDisplayName: displayName,
-                        customerPhone: ''
-                    })
-                });
-                const result = await response.json();
-                if (result.status !== 'success') {
-                    showMessage('保存用戶資料失敗: ' + result.message, 'error');
-                }
-            } catch (error) {
-                showMessage('保存用戶資料失敗: ' + error.message, 'error');
-            }
-        }
-
-        // 顯示菜單
-        function displayMenu() {
-            const menuItemsDiv = document.getElementById('menuItems');
-            const categories = {};
-            MENU.forEach(item => {
-                if (!categories[item.category]) {
-                    categories[item.category] = [];
-                }
-                categories[item.category].push(item);
-            });
-
-            for (const category in categories) {
-                const categoryDiv = document.createElement('div');
-                categoryDiv.innerHTML = `<h3>${category}</h3>`;
-                categories[category].forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'menu-item';
-                    itemDiv.innerHTML = `
-                        <label>
-                            ${item.id}. ${item.name} - $${item.price}
-                            <input type="number" min="0" max="20" value="0" data-id="${item.id}">
-                        </label>
-                    `;
-                    categoryDiv.appendChild(itemDiv);
-                });
-                menuItemsDiv.appendChild(categoryDiv);
-            }
-        }
-
-        // 提交訂單
-        async function submitOrder() {
-            const customerName = document.getElementById('customerName').value.trim();
-            const customerPhone = document.getElementById('customerPhone').value.trim();
-            const pickupTime = document.getElementById('pickupTime').value;
-            const notes = document.getElementById('notes').value.trim();
-            const items = [];
-
-            document.querySelectorAll('#menuItems input[type="number"]').forEach(input => {
-                const quantity = parseInt(input.value);
-                if (quantity > 0) {
-                    items.push({ id: parseInt(input.dataset.id), quantity });
-                }
-            });
-
-            if (!customerName || !customerPhone || !pickupTime || items.length === 0) {
-                showMessage('請填寫所有必填字段並選擇至少一項餐點', 'error');
-                return;
-            }
-
-            if (!/09\d{8}/.test(customerPhone)) {
-                showMessage('手機號碼格式錯誤，請使用0912345678格式', 'error');
-                return;
-            }
-
-            const orderData = {
-                source: 'web',
-                customerName,
-                customerPhone,
-                pickupTime,
-                notes,
-                items,
-                customerLineUserId: window.customerLineUserId || '',
-                customerDisplayName: window.customerDisplayName || ''
             };
 
-            try {
-                const response = await fetch(CONFIG.API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    showMessage(result.message, 'success');
-                    document.getElementById('orderForm').reset();
-                    document.querySelectorAll('#menuItems input[type="number"]').forEach(input => input.value = 0);
-                } else {
-                    showMessage(result.message, 'error');
+            const renderBindingStatus = () => {
+                switch (bindingStatus) {
+                    case 'syncing':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-blue-50 text-blue-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-spinner fa-spin mr-2"></i>正在連結您的LINE帳號...
+                                </p>
+                            </div>
+                        );
+                    case 'success':
+                         return (
+                            <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-check-circle mr-2"></i>LINE帳號已連結成功！
+                                </p>
+                            </div>
+                        );
+                    case 'error':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-exclamation-circle mr-2"></i>帳號連結失敗，請重新整理頁面。
+                                </p>
+                            </div>
+                        );
+                    case 'idle':
+                    default:
+                        return null;
                 }
-            } catch (error) {
-                showMessage('提交訂單失敗: ' + error.message, 'error');
-            }
-        }
+            };
 
-        // 顯示訊息
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.className = type;
-            messageDiv.textContent = message;
-            setTimeout(() => messageDiv.textContent = '', 5000);
-        }
+            return (
+                <div className="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
+                    <div className="relative mb-6">
+                        <img 
+                            src={qrCodeUrl}
+                            alt="LINE二維碼"
+                            className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
+                        />
+                        <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    </div>
+                    
+                    <div className="text-center w-full mt-4">
+                         <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
+                         <a
+                            href={lineAddFriendUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
+                            aria-label="Add Friend on LINE"
+                         >
+                            <i className="fa fa-user-plus mr-2"></i>
+                            點此加入好友
+                         </a>
+                    </div>
 
-        // 加入好友
-        function addFriend() {
-            window.open(CONFIG.FRIEND_LINK, '_blank');
-        }
+                    {userName && userId && (
+                        <div className="w-full mt-8 pt-6 border-t border-gray-200">
+                            <h4 className="text-lg font-semibold text-center mb-4 text-gray-700">已連結的LINE帳號資訊</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                                        <i className="fa fa-user mr-2 text-primary"></i>
+                                        LINE 姓名
+                                    </label>
+                                    <p className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 font-medium">
+                                        {userName}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                                        <i className="fa fa-id-card-o mr-2 text-primary"></i>
+                                        LINE User ID
+                                    </label>
+                                    <div className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 flex justify-between items-center">
+                                        <span className="truncate mr-4" title={userId}>{userId}</span>
+                                        <button 
+                                            onClick={handleIdCopy} 
+                                            className="text-gray-500 hover:text-primary transition-colors flex-shrink-0"
+                                            aria-label="複製User ID"
+                                        >
+                                            <i className="fa fa-clone fa-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-        // 事件監聽
-        document.getElementById('submitOrder').addEventListener('click', submitOrder);
-        document.getElementById('addFriendBtn').addEventListener('click', addFriend);
-
-        // 初始化
-        window.onload = () => {
-            displayMenu();
-            initializeLiff();
+                    {renderBindingStatus()}
+                </div>
+            );
         };
+        
+        // --- components/Header.tsx ---
+        const Header = () => {
+            return (
+                <header className="bg-white shadow-sm">
+                    <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                <i className="fa fa-comment text-white text-xl"></i>
+                            </div>
+                            <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
+                        </div>
+                        <div>
+                            <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                                <i className="fa fa-share-alt mr-2"></i>分享
+                            </button>
+                        </div>
+                    </div>
+                </header>
+            );
+        };
+        
+        // --- App.tsx ---
+        const App = () => {
+            const [showToast, setShowToast] = useState(false);
+            const [bindingStatus, setBindingStatus] = useState('idle');
+            const [userName, setUserName] = useState('');
+            const [userId, setUserId] = useState('');
+
+            const handleCopy = useCallback(() => {
+                setShowToast(true);
+                setTimeout(() => {
+                    setShowToast(false);
+                }, 3000);
+            }, []);
+
+            useEffect(() => {
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywuAXzTlMPVAjhKga1NP9FO19SwNl20lM8YCs_llflZz2fsY3pKV1jajV9J9mjqvqGmQ/exec';
+                const LIFF_ID = '2008276630-bYNjwMx7';
+
+                const initializeLiffAndBindUser = async () => {
+                    try {
+                        const liff = window.liff;
+                        if (!liff) {
+                            console.error('LIFF SDK not found.');
+                            setBindingStatus('error');
+                            return;
+                        }
+                        
+                        await liff.init({ liffId: LIFF_ID });
+
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                            return; 
+                        }
+                        
+                        setBindingStatus('syncing');
+                        const profile = await liff.getProfile();
+                        
+                        setUserName(profile.displayName);
+                        setUserId(profile.userId);
+
+                        if (sessionStorage.getItem('line_user_bound_session')) {
+                            setBindingStatus('success');
+                            return;
+                        }
+                        
+                        // **FIX:** Simplified payload to send only necessary data for user binding.
+                        const payload = {
+                            source: 'line_web_app',
+                            customerName: profile.displayName,
+                            customerLineId: profile.userId
+                        };
+
+                        const response = await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            cache: 'no-cache',
+                            headers: {
+                              // Use text/plain to avoid CORS preflight issues with Google Apps Script
+                              'Content-Type': 'text/plain;charset=utf-8',
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Failed to send data to Google Sheet:', response.status, errorText);
+                            throw new Error(`Server responded with status ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.status !== 'success') {
+                            console.error('Google Sheet script returned an error:', result.message);
+                            throw new Error(result.message || 'Unknown error from script');
+                        }
+
+                        sessionStorage.setItem('line_user_bound_session', 'true');
+                        setBindingStatus('success');
+
+                    } catch (error) {
+                        console.error('LIFF initialization or binding failed:', error);
+                        setBindingStatus('error');
+                    }
+                };
+
+                initializeLiffAndBindUser();
+
+            }, []);
+
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Header />
+                    <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
+                                <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                            </div>
+                            <QRCodeSection onCopy={handleCopy} bindingStatus={bindingStatus} userName={userName} userId={userId} />
+                            <Instructions />
+                        </div>
+                    </main>
+                    <Footer />
+                    <Toast message="已複製到剪貼簿" show={showToast} />
+                </div>
+            );
+        };
+
+
+        // --- index.tsx (Mounting Logic) ---
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
+        }
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        );
     </script>
 </body>
 </html>
