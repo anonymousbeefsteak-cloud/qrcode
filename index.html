@@ -1,100 +1,331 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE LIFF - 無名牛排</title>
+    <title>無名牛排 - LINE 會員註冊</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-        .container {
-            text-align: center;
             padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #00B900;
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #00B900;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .profile-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+        }
+        
+        .profile-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 3px solid #00B900;
+            object-fit: cover;
+        }
+        
+        .profile-default {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: #00B900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            border: 3px solid #00B900;
+        }
+        
+        .profile-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .profile-id {
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+        }
+        
+        .btn-primary {
+            background: #00B900;
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 10px;
             cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: background 0.3s;
         }
-        button:hover {
-            background-color: #009900;
+        
+        .btn-primary:hover {
+            background: #009900;
         }
-        #status {
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status-message {
             margin-top: 20px;
-            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #00B900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Welcome to 無名牛排</h2>
-        <p>Click below to add your LINE profile to our system.</p>
-        <button onclick="addToSheet()">Add My Profile</button>
-        <p id="status"></p>
+        <div class="logo">牛</div>
+        <h2>無名牛排</h2>
+        <p class="description">歡迎加入無名牛排會員系統，點擊下方按鈕註冊您的資料</p>
+        
+        <div class="profile-card" id="profileCard" style="display: none;">
+            <div id="profilePictureContainer"></div>
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-id" id="profileUserId"></div>
+        </div>
+        
+        <button class="btn-primary" onclick="addToSheet()" id="submitBtn">
+            註冊會員資料
+        </button>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <div class="footer">
+            Powered by LINE LIFF
+        </div>
     </div>
 
     <script>
+        let userProfile = null;
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZsVt_s5j8tdLCzOzHZWj-qeMvjxk3BqByGq1Spbk4xK44JHGTK9czDdtIVm3AmHUk6g/exec';
+
         async function initializeLiff() {
             try {
-                await liff.init({ liffId: '2008276630-bYNjwMx7' });
+                showStatus('正在初始化 LINE 應用...', 'info');
+                
+                await liff.init({ 
+                    liffId: '2008276630-bYNjwMx7'
+                });
+                
                 if (!liff.isLoggedIn()) {
-                    liff.login({ redirectUri: window.location.href });
+                    showStatus('正在導向至 LINE 登入...', 'info');
+                    liff.login({
+                        redirectUri: window.location.href
+                    });
+                    return;
                 }
+                
+                userProfile = await liff.getProfile();
+                displayProfileInfo(userProfile);
+                hideStatus();
+                
             } catch (error) {
-                document.getElementById('status').innerText = 'LIFF Initialization failed: ' + error.message;
+                console.error('LIFF 初始化失敗:', error);
+                showStatus('LINE 應用初始化失敗: ' + error.message, 'error');
             }
         }
 
+        function displayProfileInfo(profile) {
+            const profileCard = document.getElementById('profileCard');
+            const profileName = document.getElementById('profileName');
+            const profileUserId = document.getElementById('profileUserId');
+            const pictureContainer = document.getElementById('profilePictureContainer');
+            
+            profileName.textContent = profile.displayName;
+            profileUserId.textContent = 'ID: ' + profile.userId;
+            
+            if (profile.pictureUrl) {
+                pictureContainer.innerHTML = `<img src="${profile.pictureUrl}" alt="Profile" class="profile-img" onerror="this.style.display='none'; document.getElementById('profileDefault').style.display='flex';" />`;
+            } else {
+                pictureContainer.innerHTML = `
+                    <div class="profile-default" id="profileDefault">
+                        ${profile.displayName.charAt(0).toUpperCase()}
+                    </div>
+                `;
+            }
+            
+            profileCard.style.display = 'block';
+        }
+
         async function addToSheet() {
-            const statusElement = document.getElementById('status');
-            statusElement.innerText = 'Processing...';
+            if (!userProfile) {
+                showStatus('錯誤：用戶資料尚未載入', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = '<div class="loading"></div>處理中...';
+            submitBtn.disabled = true;
 
             try {
-                const profile = await liff.getProfile();
                 const userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
+                    userId: userProfile.userId,
+                    displayName: userProfile.displayName,
+                    pictureUrl: userProfile.pictureUrl || '',
                     timestamp: new Date().toISOString()
                 };
 
-                const response = await fetch('https://script.google.com/macros/s/AKfycbzA-UdP-zl4b_zdCiKCjCoc4IrVRSbO_v0pZUO4R3fcsr-SCeRd7FK6sxzCWvWooWlnHA/exec', {
+                console.log('發送資料:', userData);
+
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(userData),
-                    mode: 'cors',
-                    redirect: 'follow'
+                    body: JSON.stringify(userData)
                 });
 
                 const result = await response.json();
+                console.log('伺服器回應:', result);
+
                 if (result.status === 'success') {
-                    statusElement.innerText = 'Profile added successfully!';
+                    showStatus('✅ 註冊成功！您的資料已加入會員系統', 'success');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '已註冊';
                 } else {
-                    statusElement.innerText = 'Error: ' + result.message;
+                    showStatus('❌ ' + result.message, 'error');
                 }
+                
             } catch (error) {
-                statusElement.innerText = 'Error: ' + error.message;
+                console.error('請求失敗:', error);
+                showStatus('❌ 網路錯誤: ' + error.message, 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         }
 
-        window.onload = initializeLiff;
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status-message status-' + type;
+            statusElement.style.display = 'block';
+        }
+
+        function hideStatus() {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.style.display = 'none';
+        }
+
+        // 測試伺服器連線
+        async function testServer() {
+            try {
+                const response = await fetch(SCRIPT_URL + '?test=true');
+                const result = await response.json();
+                console.log('伺服器測試:', result);
+            } catch (error) {
+                console.error('伺服器測試失敗:', error);
+            }
+        }
+
+        // 頁面載入時初始化
+        window.onload = function() {
+            initializeLiff();
+            testServer();
+        };
     </script>
 </body>
 </html>
