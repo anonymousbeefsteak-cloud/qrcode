@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -67,6 +68,15 @@
         import ReactDOM from 'react-dom/client';
 
         // --- Application Constants ---
+        const APP_CONFIG = {
+            SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw7HUEHnAE7KmvEZW4EIP9JfA9jAjyWjsCIJnxYvwRfaNRL5R_5WbI7wNkQ32G1c7eKMA/exec',
+            LIFF_ID: '2008276630-bYNjwMx7',
+            // NOTE: This QR code URL has an expiration date in its signature (x-expires).
+            // It may need to be updated in the future.
+            QR_CODE_URL: "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-aanyxblx48/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-aanyxblx48-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D",
+            LINE_ADD_FRIEND_URL: 'https://line.me/R/ti/p/@561zotgq',
+        };
+
         const BindingStatus = {
             Idle: 'idle',
             Syncing: 'syncing',
@@ -99,40 +109,52 @@
             );
         };
 
-        // --- components/Instructions.tsx ---
-        const Instructions = () => {
+        // --- components/FlowDiagram.tsx ---
+        const FlowDiagram = () => {
+            const flowSteps = [
+                { icon: 'fa-user', title: 'LINE 用戶', description: '掃描 QR Code' },
+                { icon: 'fa-mobile', title: 'LIFF 應用程式', description: '取得用戶資料' },
+                { icon: 'fa-cogs', title: 'Google Apps Script', description: '處理並傳送資料' },
+                { icon: 'fa-table', title: 'Google Sheets', description: '寫入並儲存資料' },
+            ];
+
             return (
                 <div className="bg-white rounded-xl p-6 shadow-md">
-                    <h3 className="text-xl font-bold mb-4 flex items-center">
-                        <i className="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    <h3 className="text-xl font-bold mb-6 text-center flex items-center justify-center">
+                        <i className="fa fa-sitemap text-primary mr-2"></i>
+                        資料處理流程
                     </h3>
-                    <ol className="space-y-4">
-                        <li className="flex items-start">
-                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
-                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
-                        </li>
-                        <li className="flex items-start">
-                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
-                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
-                        </li>
-                        <li className="flex items-start">
-                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
-                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
-                        </li>
-                    </ol>
+                    <div className="relative">
+                        {/* Connecting line */}
+                        <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gray-200" style={{ top: '2rem', bottom: '2rem' }}></div>
+                        
+                        <div className="space-y-8">
+                            {flowSteps.map((step, index) => (
+                                <div key={index} className="flex flex-col items-center text-center relative z-10">
+                                    <div className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center text-xl mb-3 border-4 border-white">
+                                        <i className={`fa ${step.icon}`}></i>
+                                    </div>
+                                    <h4 className="font-semibold text-dark">{step.title}</h4>
+                                    {index < flowSteps.length - 1 && (
+                                        <div className="mt-2 text-gray-500 text-sm flex items-center">
+                                            <i className="fa fa-arrow-down mr-2"></i>
+                                            <span>{step.description}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             );
         };
 
         // --- components/QRCodeSection.tsx ---
         const QRCodeSection = ({ onCopy, bindingStatus, userName, userId, errorMessage, debugInfo }) => {
-            const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
-            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-aanyxblx48/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-aanyxblx48-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
-
             const handleIdCopy = () => {
                 if (userId) {
                     navigator.clipboard.writeText(userId);
-                    onCopy();
+                    onCopy('已複製到剪貼簿');
                 }
             };
 
@@ -179,7 +201,7 @@
                 <div className="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
                     <div className="relative mb-6">
                         <img 
-                            src={qrCodeUrl}
+                            src={APP_CONFIG.QR_CODE_URL}
                             alt="LINE二維碼"
                             className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
                         />
@@ -192,7 +214,7 @@
                     <div className="text-center w-full mt-4">
                         <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
                         <a
-                            href={lineAddFriendUrl}
+                            href={APP_CONFIG.LINE_ADD_FRIEND_URL}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
@@ -242,7 +264,7 @@
         };
 
         // --- components/Header.tsx ---
-        const Header = () => {
+        const Header = ({ onShare }) => {
             const handleShare = async () => {
                 if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
                     try {
@@ -252,12 +274,16 @@
                                 text: '掃描QR碼加入我們的LINE好友！',
                             },
                         ]);
+                        onShare('分享內容已送出！');
                     } catch (error) {
                         console.error('Share failed:', error);
-                        alert('分享失敗，請稍後再試。');
+                        // User cancelled the share picker
+                        if (error.code !== 'CANCEL') {
+                           onShare('分享失敗，請稍後再試。');
+                        }
                     }
                 } else {
-                    alert('此功能需要在LINE應用程式中開啟才能使用。');
+                    onShare('此功能需要在LINE應用程式中開啟才能使用。');
                 }
             };
             
@@ -285,31 +311,28 @@
 
         // --- App.tsx ---
         const App = () => {
-            const [showToast, setShowToast] = useState(false);
+            const [toastInfo, setToastInfo] = useState({ show: false, message: '' });
             const [bindingStatus, setBindingStatus] = useState(BindingStatus.Idle);
             const [userName, setUserName] = useState('');
             const [userId, setUserId] = useState('');
             const [errorMessage, setErrorMessage] = useState('');
             const [debugInfo, setDebugInfo] = useState('');
 
-            const handleCopy = useCallback(() => {
-                setShowToast(true);
+            const triggerToast = useCallback((message) => {
+                setToastInfo({ show: true, message });
                 setTimeout(() => {
-                    setShowToast(false);
+                    setToastInfo({ show: false, message: '' });
                 }, 3000);
             }, []);
 
             useEffect(() => {
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzvtP_0oNJ9-NnmyP1n-vCELHxll69ly4nx37DC9iZrto87itDHXLBJnDb9u0C6MJ0rfw/exec';
-                const LIFF_ID = '2008276630-bYNjwMx7';
-
                 const initializeLiffAndBindUser = async () => {
                     console.log('[DEBUG] Starting LIFF initialization...');
                     let responseText = ''; // To store raw response for debugging
                     try {
                         if (!window.liff) throw new Error('LIFF SDK is not available.');
                         
-                        await window.liff.init({ liffId: LIFF_ID });
+                        await window.liff.init({ liffId: APP_CONFIG.LIFF_ID });
 
                         if (!window.liff.isLoggedIn()) {
                             window.liff.login();
@@ -335,7 +358,7 @@
                             customerLineId: profile.userId,
                         };
                         
-                        const response = await fetch(SCRIPT_URL, {
+                        const response = await fetch(APP_CONFIG.SCRIPT_URL, {
                             method: 'POST',
                             mode: 'cors',
                             cache: 'no-cache',
@@ -388,7 +411,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <Header />
+                    <Header onShare={triggerToast} />
                     <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
                         <div className="max-w-3xl mx-auto">
                             <div className="text-center mb-10">
@@ -396,18 +419,18 @@
                                 <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
                             </div>
                             <QRCodeSection 
-                                onCopy={handleCopy} 
+                                onCopy={triggerToast} 
                                 bindingStatus={bindingStatus} 
                                 userName={userName} 
                                 userId={userId} 
                                 errorMessage={errorMessage}
                                 debugInfo={debugInfo}
                             />
-                            <Instructions />
+                            <FlowDiagram />
                         </div>
                     </main>
                     <Footer />
-                    <Toast message="已複製到剪貼簿" show={showToast} />
+                    <Toast message={toastInfo.message} show={toastInfo.show} />
                 </div>
             );
         };
