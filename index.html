@@ -239,6 +239,23 @@
             margin-bottom: 5px;
         }
         
+        .success-actions {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success-actions button {
+            margin-bottom: 10px;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
         /* 響應式調整 */
         @media (max-width: 480px) {
             .container {
@@ -278,6 +295,11 @@
         
         <div id="status"></div>
         
+        <div class="success-actions" id="successActions">
+            <button id="openChatBtn">進入官方聊天室</button>
+            <button id="closeBtn" class="btn-secondary">關閉頁面</button>
+        </div>
+        
         <div class="privacy-info">
             <h3>隱私保護說明</h3>
             <ul>
@@ -296,12 +318,16 @@
         // 全域變數
         const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **請務必更新為您的 LIFF ID**
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必更新為您的 GAS Web App URL**
+        const OFFICIAL_ACCOUNT_URL = 'https://line.me/R/ti/p/@無名牛排';  // <-- **請更新為您的官方帳號連結**
         
         // DOM 元素
         const statusEl = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
         const phoneInput = document.getElementById('phone');
         const phoneValidationEl = document.getElementById('phoneValidation');
+        const successActions = document.getElementById('successActions');
+        const openChatBtn = document.getElementById('openChatBtn');
+        const closeBtn = document.getElementById('closeBtn');
 
         // 初始化 LIFF - 強化錯誤處理與重試邏輯
         async function initializeLiff() {
@@ -378,6 +404,26 @@
             submitBtn.disabled = !isPhoneValid || !liff.isLoggedIn();
         }
 
+        // 顯示成功操作按鈕
+        function showSuccessActions() {
+            successActions.style.display = 'block';
+        }
+
+        // 跳轉到官方聊天室
+        function openOfficialChat() {
+            // 使用 LINE 官方方法跳轉到官方帳號
+            if (liff.isInClient()) {
+                // 在 LINE 內部瀏覽器中
+                liff.openWindow({
+                    url: OFFICIAL_ACCOUNT_URL,
+                    external: false
+                });
+            } else {
+                // 在外部瀏覽器中
+                window.open(OFFICIAL_ACCOUNT_URL, '_blank');
+            }
+        }
+
         // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
         async function submitBinding() {
             submitBtn.disabled = true;
@@ -428,17 +474,11 @@
                 });
 
                 // 注意: no-cors 模式下無法讀取 response，但假設成功（GAS 會處理並寫入 Sheets）
-                updateStatus('綁定成功！視窗即將關閉', 'success');
+                updateStatus('綁定成功！', 'success');
                 console.log('Binding submitted successfully:', postData);
-
-                // 延遲關閉 LIFF 視窗
-                setTimeout(() => {
-                    if (liff.isInClient()) {
-                        liff.closeWindow();
-                    } else {
-                        alert('綁定完成！您可以關閉此頁面。');
-                    }
-                }, 2000);
+                
+                // 顯示成功操作按鈕
+                showSuccessActions();
 
             } catch (error) {
                 updateStatus('綁定失敗: ' + error.message + '。請檢查網路或重試。', 'error');
@@ -469,6 +509,18 @@
             phoneInput.addEventListener('blur', function() {
                 if (this.value.trim() === '') {
                     updatePhoneValidation('');
+                }
+            });
+
+            // 進入官方聊天室按鈕
+            openChatBtn.addEventListener('click', openOfficialChat);
+            
+            // 關閉頁面按鈕
+            closeBtn.addEventListener('click', function() {
+                if (liff.isInClient()) {
+                    liff.closeWindow();
+                } else {
+                    alert('綁定完成！您可以關閉此頁面。');
                 }
             });
 
