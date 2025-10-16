@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 - 用戶綁定</title>
+    <title>無名牛排 - 加入好友</title>
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
@@ -148,6 +148,10 @@
             cursor: pointer;
             transition: background-color 0.3s, transform 0.2s;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         button:disabled {
@@ -248,12 +252,30 @@
             margin-bottom: 10px;
         }
         
+        .btn-add-friend {
+            background-color: var(--primary-color);
+            font-size: 16px;
+        }
+        
         .btn-secondary {
             background-color: #6c757d;
         }
         
         .btn-secondary:hover {
             background-color: #5a6268;
+        }
+        
+        .success-icon {
+            font-size: 48px;
+            color: var(--success-color);
+            margin: 15px 0;
+        }
+        
+        .success-message {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--success-color);
+            margin-bottom: 20px;
         }
         
         /* 響應式調整 */
@@ -280,7 +302,7 @@
     <div class="container">
         <div class="logo">牛</div>
         <h1>歡迎加入無名牛排</h1>
-        <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
+        <p>請填寫您的手機號碼進行綁定，完成後即可加入官方好友，獲取最新優惠資訊。</p>
         
         <div class="form-group">
             <label for="phone">手機號碼</label>
@@ -291,13 +313,20 @@
             <div id="phoneValidation" class="validation-message"></div>
         </div>
         
-        <button id="submitBtn" disabled>立即綁定</button>
+        <button id="submitBtn" disabled>
+            <span>立即綁定</span>
+        </button>
         
         <div id="status"></div>
         
         <div class="success-actions" id="successActions">
-            <button id="openChatBtn">進入官方聊天室</button>
-            <button id="closeBtn" class="btn-secondary">關閉頁面</button>
+            <div class="success-icon">✓</div>
+            <div class="success-message">綁定成功！</div>
+            <p>現在您可以加入官方好友，接收最新優惠與訂餐資訊</p>
+            <button id="addFriendBtn" class="btn-add-friend">
+                <span>加入官方好友</span>
+            </button>
+            <button id="closeBtn" class="btn-secondary">稍後加入</button>
         </div>
         
         <div class="privacy-info">
@@ -318,7 +347,7 @@
         // 全域變數
         const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **請務必更新為您的 LIFF ID**
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必更新為您的 GAS Web App URL**
-        const OFFICIAL_ACCOUNT_URL = 'https://line.me/R/ti/p/@無名牛排';  // <-- **請更新為您的官方帳號連結**
+        const OFFICIAL_ACCOUNT_ID = '@無名牛排';  // <-- **請更新為您的官方帳號ID**
         
         // DOM 元素
         const statusEl = document.getElementById('status');
@@ -326,7 +355,7 @@
         const phoneInput = document.getElementById('phone');
         const phoneValidationEl = document.getElementById('phoneValidation');
         const successActions = document.getElementById('successActions');
-        const openChatBtn = document.getElementById('openChatBtn');
+        const addFriendBtn = document.getElementById('addFriendBtn');
         const closeBtn = document.getElementById('closeBtn');
 
         // 初始化 LIFF - 強化錯誤處理與重試邏輯
@@ -407,21 +436,27 @@
         // 顯示成功操作按鈕
         function showSuccessActions() {
             successActions.style.display = 'block';
+            // 隱藏表單區域
+            document.querySelector('.form-group').style.display = 'none';
+            submitBtn.style.display = 'none';
         }
 
-        // 跳轉到官方聊天室
-        function openOfficialChat() {
-            // 使用 LINE 官方方法跳轉到官方帳號
+        // 加入官方好友
+        function addOfficialFriend() {
+            // 使用 LINE 官方方法加入好友
             if (liff.isInClient()) {
                 // 在 LINE 內部瀏覽器中
                 liff.openWindow({
-                    url: OFFICIAL_ACCOUNT_URL,
+                    url: `https://line.me/R/ti/p/${OFFICIAL_ACCOUNT_ID}`,
                     external: false
                 });
             } else {
                 // 在外部瀏覽器中
-                window.open(OFFICIAL_ACCOUNT_URL, '_blank');
+                window.open(`https://line.me/R/ti/p/${OFFICIAL_ACCOUNT_ID}`, '_blank');
             }
+            
+            // 提示用戶
+            updateStatus('正在開啟加入好友頁面...', 'info');
         }
 
         // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
@@ -449,7 +484,7 @@
                     customerPhone: phoneInputValue,
                     pictureUrl: profile.pictureUrl || '',
                     statusMessage: profile.statusMessage || '',
-                    sourceType: 'QR_ADD_FRIEND',  // 或 'LIFF_BINDING'
+                    sourceType: 'QR_ADD_FRIEND',
                     botId: '2008190577'  // <-- **請務必更新為您的 Bot Channel ID**
                 };
 
@@ -474,7 +509,7 @@
                 });
 
                 // 注意: no-cors 模式下無法讀取 response，但假設成功（GAS 會處理並寫入 Sheets）
-                updateStatus('綁定成功！', 'success');
+                updateStatus('', 'success');
                 console.log('Binding submitted successfully:', postData);
                 
                 // 顯示成功操作按鈕
@@ -512,8 +547,8 @@
                 }
             });
 
-            // 進入官方聊天室按鈕
-            openChatBtn.addEventListener('click', openOfficialChat);
+            // 加入好友按鈕
+            addFriendBtn.addEventListener('click', addOfficialFriend);
             
             // 關閉頁面按鈕
             closeBtn.addEventListener('click', function() {
@@ -529,11 +564,6 @@
                 console.log('LIFF Context:', liff.getContext());
             }
         });
-
-        // LIFF 額外功能（選用強化）
-        // - 分享綁定結果: liff.shareTargetPicker([{ type: 'text', text: '我已綁定無名牛排！' }])
-        // - 取得好友狀態: liff.getFriendship().then(f => console.log(f))
-        // - 語言偵測: const lang = liff.getLanguage(); // 切換 UI 文字
     </script>
 </body>
 </html>
