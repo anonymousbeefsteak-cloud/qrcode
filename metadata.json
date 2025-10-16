@@ -1,5 +1,5 @@
 {
-  "name": "LINE ID to Google Sheet",
-  "description": "An application that scans a QR code to open a LINE Front-end Framework (LIFF) page, retrieves the user's LINE ID, and adds it to a Google Sheet via a Google Apps Script backend.",
+  "name": "LINE QR Code Friend Registrar",
+  "description": "A LIFF application that captures a user's LINE profile after they scan a QR code or open the app link, and adds their information to a Google Sheet.",
   "requestFramePermissions": []
 }
