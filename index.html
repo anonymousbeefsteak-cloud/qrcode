@@ -1,341 +1,178 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 - 用戶綁定</title>
-    <!-- LINE LIFF SDK -->
+    <title>LINE 二維碼 - 無名牛排</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            text-align: center;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300',
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                }
+            }
         }
-        body.loaded {
-            opacity: 1;
-        }
-        .container {
-            max-width: 400px;
-            width: 100%;
-            background: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        h1 {
-            color: #00B900;
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 16px;
-            color: #555;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            text-align: left;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        input[type="tel"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: border 0.3s;
-        }
-        input[type="tel"]:focus {
-            border-color: #00B900;
-            outline: none;
-        }
-        input[type="tel"].invalid {
-            border-color: #ff0000;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background-color: #00B900;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        button:hover:not(:disabled) {
-            background-color: #009900;
-            transform: scale(1.02);
-        }
-        #status {
-            margin-top: 20px;
-            font-size: 16px;
-            font-weight: bold;
-            min-height: 24px;
-            transition: color 0.3s;
-        }
-        .success { color: #00B900; animation: pulse 1s; }
-        .error { color: #ff0000; }
-        .info { color: #0066cc; }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #aaa;
-        }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #00B900;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
         }
     </style>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="opacity-0">
-    <div class="container">
-        <h1>歡迎加入無名牛排</h1>
-        <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
+<body class="bg-gray-50 font-sans text-dark">
+    <div class="min-h-screen flex flex-col">
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        <i class="fa fa-comment text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-bold">無名牛排 LINE 二維碼</h1>
+                </div>
+                <div>
+                    <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center" onclick="shareLink()">
+                        <i class="fa fa-share-alt mr-2"></i>分享
+                    </button>
+                </div>
+            </div>
+        </header>
         
-        <label for="phone">手機號碼（09xxxxxxxx）</label>
-        <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
+        <main class="flex-grow container mx-auto px-4 py-8 md:py-16">
+            <div class="max-w-3xl mx-auto">
+                <div class="text-center mb-10">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入無名牛排</h2>
+                    <p class="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，添加好友並綁定會員</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
+                    <div class="relative mb-6">
+                        <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
+                             alt="LINE二維碼" 
+                             class="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg">
+                        <div class="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div class="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div class="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div class="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
+                        <div class="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
+                            <i class="fa fa-id-card text-primary mr-2"></i>
+                            <span>@561zotgq</span>
+                            <button class="ml-3 text-primary hover:text-primary/80 transition" onclick="copyToClipboard('@561zotgq')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    </h3>
+                    <ol class="space-y-4">
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                            <p>掃描成功後，添加好友並前往綁定會員頁面</p>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </main>
         
-        <button id="submitBtn" disabled>立即綁定</button>
-        
-        <div id="status"></div>
-        
-        <div class="footer">
-            資料僅用於訂餐服務，符合 LINE 隱私政策。
-        </div>
+        <footer class="bg-dark text-white py-6">
+            <div class="container mx-auto px-4 text-center">
+                <p class="mb-2">© 2025 無名牛排. 保留所有權利。</p>
+                <p class="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+            </div>
+        </footer>
     </div>
-
+    
+    <div id="copyToast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+        已複製到剪貼簿
+    </div>
+    
     <script>
-        // --- Configuration ---
+        // Configuration
         const LIFF_ID = '2008289130-9XPR8Kpj';
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';
-        const BOT_CHANNEL_ID = '2008190577';
+        const LIFF_URL = 'https://liff.line.me/2008289130-9XPR8Kpj';
 
-        // DOM Elements
-        const statusEl = document.getElementById('status');
-        const submitBtn = document.getElementById('submitBtn');
-        const phoneInput = document.getElementById('phone');
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('copyToast');
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0');
+                }, 3000);
+            });
+        }
 
-        /**
-         * Initialize LINE LIFF application
-         */
+        // Share link
+        function shareLink() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '無名牛排 LINE 二維碼',
+                    text: '掃描二維碼加入無名牛排，享受會員優惠！',
+                    url: LIFF_URL
+                }).catch(err => console.error('Share error:', err));
+            } else {
+                copyToClipboard(LIFF_URL);
+            }
+        }
+
+        // Initialize LIFF and redirect to binding page
         async function initializeLiff() {
-            console.log('Starting LIFF initialization at:', new Date().toISOString());
             try {
-                updateStatus('正在初始化 LINE 服務...', 'info');
                 await liff.init({ liffId: LIFF_ID });
                 console.log('LIFF initialized successfully');
-                updateStatus('LINE 服務初始化成功', 'info');
-
-                if (!liff.isLoggedIn()) {
-                    console.log('User not logged in, redirecting to login');
-                    updateStatus('未登入 LINE，正在跳轉登入頁面...', 'info');
-                    liff.login({ redirectUri: window.location.href });
-                    return;
+                if (liff.isLoggedIn()) {
+                    window.location.href = 'https://anonymousbeefsteak-cloud.github.io/qrcode/';
+                } else {
+                    liff.login({ redirectUri: LIFF_URL });
                 }
-
-                const profile = await liff.getProfile();
-                console.log('User profile:', {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl,
-                    statusMessage: profile.statusMessage
-                });
-                updateStatus(`已登入 LINE (${profile.displayName})，請填寫手機號碼`, 'info');
-                enableSubmitButton();
             } catch (error) {
                 console.error('LIFF Init Error:', error.message, error.stack);
-                updateStatus(`LINE 服務初始化失敗: ${error.message}。請檢查網路或 LIFF 設定。`, 'error');
-                if (!liff.isInClient()) {
-                    console.warn('This page is recommended to be opened in the LINE app for full functionality.');
-                }
+                alert('無法初始化 LINE 服務，請在 LINE 應用程式內開啟。');
             }
         }
 
-        /**
-         * Update status message
-         * @param {string} message - Message to display
-         * @param {'info'|'success'|'error'} type - Message type
-         */
-        function updateStatus(message, type) {
-            statusEl.textContent = message;
-            statusEl.className = type;
-            if (type === 'info') {
-                statusEl.innerHTML = `<span class="loading"></span>${message}`;
-            } else {
-                statusEl.innerHTML = message;
-            }
-        }
-
-        /**
-         * Enable or disable submit button based on input and login status
-         */
-        function enableSubmitButton() {
-            validateInput();
-        }
-
-        /**
-         * Validate phone number format
-         * @param {string} phone - Phone number to validate
-         * @returns {boolean} - True if valid
-         */
-        function validatePhone(phone) {
-            const regex = /^09\d{8}$/;
-            const isValid = regex.test(phone);
-            phoneInput.classList.toggle('invalid', phone && !isValid);
-            return isValid;
-        }
-
-        /**
-         * Validate input and update button state
-         */
-        function validateInput() {
-            const phone = phoneInput.value.trim();
-            const isPhoneValid = validatePhone(phone);
-            const isLoggedIn = liff.isLoggedIn();
-            submitBtn.disabled = !(isPhoneValid && isLoggedIn);
-        }
-
-        /**
-         * Submit binding data to Google Apps Script
-         */
-        async function submitBinding() {
-            submitBtn.disabled = true;
-            updateStatus('正在送出綁定請求，請稍候...', 'info');
-
-            try {
-                if (!liff.isLoggedIn()) {
-                    throw new Error('LINE 帳號未登入或登入資訊已過期，請重新嘗試登入。');
-                }
-
-                const profile = await liff.getProfile();
-                const phoneInputValue = phoneInput.value.trim();
-
-                if (!validatePhone(phoneInputValue)) {
-                    throw new Error('手機格式錯誤，請輸入 09 開頭的 10 位數字。');
-                }
-
-                const postData = {
-                    data: [{
-                        timestamp: new Date().toISOString(),
-                        customerLineId: profile.userId || 'Unknown',
-                        customerName: profile.displayName || 'N/A',
-                        customerPhone: phoneInputValue,
-                        pictureUrl: profile.pictureUrl || '',
-                        statusMessage: profile.statusMessage || '',
-                        sourceType: 'LIFF_User_Binding',
-                        botId: BOT_CHANNEL_ID
-                    }]
-                };
-
-                console.log('Sending POST to:', GAS_URL, 'Data:', JSON.stringify(postData, null, 2));
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    controller.abort();
-                    updateStatus('綁定請求超時，請檢查網路後重試。', 'error');
-                    enableSubmitButton();
-                }, 15000);
-
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(postData),
-                    redirect: 'follow',
-                    cache: 'no-store',
-                    signal: controller.signal
-                });
-
-                clearTimeout(timeoutId);
-                console.log('GAS response status:', response.status);
-
-                let result;
-                try {
-                    result = await response.json();
-                    console.log('GAS response body:', JSON.stringify(result, null, 2));
-                } catch (e) {
-                    result = { status: 'success', message: 'No JSON response (assumed success)' };
-                    console.warn('Failed to parse GAS response:', e.message);
-                }
-
-                if (response.ok && result.status === 'success') {
-                    updateStatus('綁定成功！此頁面將自動關閉。', 'success');
-                    setTimeout(() => {
-                        if (liff.isInClient()) {
-                            console.log('Closing LIFF window');
-                            liff.closeWindow();
-                        } else {
-                            alert('綁定完成！您可以安全關閉此頁面。');
-                        }
-                    }, 2000);
-                } else {
-                    throw new Error(result.message || `HTTP error: ${response.status}`);
-                }
-            } catch (error) {
-                console.error('Submit Binding Error:', error.message, error.stack);
-                updateStatus(`綁定失敗: ${error.message}。請檢查資訊或重試。`, 'error');
-                enableSubmitButton();
-            }
-        }
-
-        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Page loaded at:', new Date().toISOString());
-            document.body.classList.add('loaded');
+            document.body.classList.add('opacity-100');
+            document.body.classList.remove('opacity-0');
             initializeLiff();
-            submitBtn.addEventListener('click', submitBinding);
-            phoneInput.addEventListener('input', validateInput);
-        });
-
-        liff.ready.then(() => {
-            console.log('LIFF SDK fully loaded and ready.');
-        }).catch((err) => {
-            console.error('LIFF SDK load error:', err);
-            updateStatus('LINE 服務載入失敗，請檢查網路或稍後重試。', 'error');
         });
     </script>
 </body>
