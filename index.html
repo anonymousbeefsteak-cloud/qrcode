@@ -3,204 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 加好友</title>
+    <title>LINE 加好友記錄</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body {
-            font-family: 'Microsoft JhengHei', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; /* Changed to 100vh for full page */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-            margin: 20px;
-        }
-        .logo {
-            width: 120px;
-            height: 120px;
-            background: #00b900;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0,185,0,0.3);
-        }
-        h1 { color: #333; margin: 0 0 20px; font-size: 2em; }
-        p { color: #666; margin: 0 0 30px; font-size: 1.1em; line-height: 1.6; }
-        .add-btn {
-            background: #00b900;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 25px;
-            font-size: 18px;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-            box-sizing: border-box;
-            box-shadow: 0 4px 10px rgba(0,185,0,0.2);
-            font-weight: bold;
-        }
-        .add-btn:hover { background: #00a300; transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,185,0,0.3); }
-        .add-btn:active { transform: translateY(0); box-shadow: 0 2px 5px rgba(0,185,0,0.2); }
-
-        .status {
-            padding: 12px; /* Slightly more padding */
-            border-radius: 10px;
-            margin-top: 20px; /* More margin */
-            font-weight: bold;
-            word-break: break-word;
-            font-size: 0.95em;
-        }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #status { margin: 20px; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">🥩</div>
-        <h1>無名牛排</h1>
-        <p>掃碼加好友，即享專屬優惠！</p>
-        <button class="add-btn" onclick="addFriend()">立即加好友</button>
-        <div id="status"></div>
-    </div>
+    <h1>歡迎！掃碼加入好友</h1>
+    <p>正在處理您的資料...</p>
+    <div id="profile"></div>
+    <div id="status"></div>
 
     <script>
-        const LIFF_ID = '2008276630-bYNjwMx7'; // Make sure this is YOUR LIFF ID
-        // *** IMPORTANT: Replace with the Web App URL from your Apps Script deployment ***
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTnQyHGMbp0pHp31JMc5dpR2GzPhFDsyBtootaf68l6fgJ9jEAztkfDecXDbfueTe6QQ/exec';
-        const BOT_LINE_ID = '@561zotgq'; // Make sure this is your bot's LINE ID
+        const LIFF_ID = '2008276630-bYNjwMx7'; // 你的 LIFF ID
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxfrYlDMYiERpd1FRGNvp8QACLfm1jbm0yKVUq3RKD-YQfPcWLvEXDH6eBtPIRbOiKPig/exec'; // 你的 GAS 部署網址
 
-        async function initLiff() {
+        async function initializeLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF Initialization successful. Context:', liff.getContext());
-                if (liff.isLoggedIn() && liff.isInClient()) {
-                    // Automatically try to get profile if already logged in and in LINE
-                    // This might be useful for scenarios where user just re-opens LIFF
-                    // await getAndSendProfile(); // Can add this if you want to send data on initial load
-                }
-            } catch (error) {
-                console.error('LIFF Initialization failed:', error);
-                showStatus(`LIFF 初始化失敗：${error.message || '未知錯誤'}`, 'error');
-            }
-        }
-
-        async function addFriend() {
-            try {
-                showStatus('正在處理您的請求...', 'loading');
-
-                if (!liff.isInClient()) {
-                    showStatus('請在LINE應用程式內開啟此頁面，正在導向加好友頁面...', 'loading');
-                    // Add a delay before redirecting to allow user to read message
-                    setTimeout(() => {
-                        window.location.href = `https://line.me/R/ti/p/${BOT_LINE_ID}`;
-                    }, 2000);
-                    return;
-                }
-
                 if (!liff.isLoggedIn()) {
-                    showStatus('請先登入LINE帳號...', 'loading');
                     liff.login();
-                    return; // liff.login() will redirect, so no further execution here
                 }
-
-                await getAndSendProfile();
-
+                const profile = await liff.getProfile();
+                document.getElementById('profile').innerHTML = `
+                    <p>姓名: ${profile.displayName}</p>
+                    <img src="${profile.pictureUrl}" alt="頭像" width="100">
+                `;
+                await sendToBackend(profile);
             } catch (error) {
-                console.error('加好友流程發生錯誤:', error);
-                let errorMessage = '加好友失敗，請重試。';
-                if (error.name === 'AbortError') errorMessage = '請求超時，請檢查網路連線。';
-                else if (error.code === '2') errorMessage = `LIFF 應用程式錯誤: ${error.message || '請檢查設定'}`;
-                else if (error.message) errorMessage = error.message;
-                showStatus(errorMessage, 'error');
+                showStatus('錯誤: ' + error.message, 'error');
             }
         }
 
-        async function getAndSendProfile() {
+        async function sendToBackend(profile) {
             try {
-                const profile = await liff.getProfile();
-                console.log('Profile acquired:', profile);
-
-                if (!profile || !profile.userId) {
-                    throw new Error('無法獲取用戶資料，請檢查 LIFF 權限。');
-                }
-
-                const userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    // Use liff.getDecodedIDToken().email if 'email' scope is requested and available
-                    statusMessage: profile.statusMessage || liff.getDecodedIDToken()?.email || 'N/A', // Using profile.statusMessage if available
-                    timestamp: new Date().toISOString(),
-                    source: `LIFF 掃碼 ${BOT_LINE_ID}`,
-                    botId: BOT_LINE_ID.replace('@', '')
-                };
-                console.log('UserData prepared for send:', userData);
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout to 15 seconds
-
-                const response = await fetch(APPS_SCRIPT_URL, {
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData),
-                    signal: controller.signal
+                    body: JSON.stringify({
+                        userId: profile.userId,
+                        displayName: profile.displayName,
+                        pictureUrl: profile.pictureUrl
+                    })
                 });
-
-                clearTimeout(timeoutId);
-                console.log('Fetch response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Server error response text:', errorText);
-                    throw new Error(`HTTP 錯誤！狀態: ${response.status}. 詳情: ${errorText.substring(0, 200)}...`);
-                }
-
                 const result = await response.json();
-                console.log('Server response:', result);
-                if (result.status === 'success') {
-                    showStatus(`歡迎 ${profile.displayName}！您的資訊已記錄。`, 'success');
-                    // Open the LINE friend add page and then close LIFF
-                    liff.openWindow({
-                        url: `https://line.me/R/ti/p/${BOT_LINE_ID}`,
-                        external: true
-                    });
-                    setTimeout(() => liff.closeWindow(), 3000); // Close LIFF after a short delay
+                if (result.success) {
+                    showStatus(result.message, 'success');
                 } else {
-                    throw new Error(result.message || '伺服器錯誤');
+                    showStatus(result.message, 'error');
                 }
-
             } catch (error) {
-                console.error('獲取並發送資料時發生錯誤:', error);
-                throw error; // Re-throw to be caught by the outer addFriend error handler
+                showStatus('傳送失敗: ' + error.message, 'error');
             }
         }
 
-
         function showStatus(message, type) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = message;
-            statusEl.className = `status ${type}`;
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
         }
 
-        window.onload = initLiff;
+        // 頁面載入時初始化
+        window.onload = initializeLiff;
     </script>
 </body>
 </html>
