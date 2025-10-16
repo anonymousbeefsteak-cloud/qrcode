@@ -3,340 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 - 加入好友</title>
+    <title>無名牛排 - 用戶綁定</title>
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 強化樣式: 響應式設計、現代 UI、品牌綠色、錯誤提示動畫 */
-        :root {
-            --primary-color: #00B900;
-            --primary-dark: #009900;
-            --error-color: #ff0000;
-            --warning-color: #ff9800;
-            --success-color: #00B900;
-            --info-color: #0066cc;
-            --text-color: #333;
-            --text-light: #555;
-            --border-color: #ddd;
-            --bg-color: #f4f4f4;
-            --white: #fff;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        * {
-            box-sizing: border-box;
-        }
-        
+        /* 強化樣式: 響應式設計、現代 UI, 品牌綠色、錯誤提示動畫 */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
+            background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
-            color: var(--text-color);
+            color: #333;
             text-align: center;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            line-height: 1.6;
         }
-        
         .container {
             max-width: 400px;
             width: 100%;
-            background: var(--white);
+            background: #fff;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             animation: fadeIn 0.5s ease-in-out;
         }
-        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background-color: var(--primary-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        
         h1 {
-            color: var(--primary-color);
+            color: #00B900; /* LINE 綠 */
             font-size: 24px;
             margin-bottom: 10px;
         }
-        
         p {
             font-size: 16px;
-            color: var(--text-light);
+            color: #555;
             margin-bottom: 20px;
         }
-        
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        
         label {
             display: block;
+            text-align: left;
             font-weight: bold;
             margin-bottom: 8px;
-            color: var(--text-color);
+            color: #333;
         }
-        
-        .input-wrapper {
-            position: relative;
-        }
-        
         input[type="tel"] {
             width: 100%;
             padding: 12px;
-            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
+            box-sizing: border-box;
             transition: border 0.3s;
         }
-        
         input[type="tel"]:focus {
-            border-color: var(--primary-color);
+            border-color: #00B900;
             outline: none;
         }
-        
         input[type="tel"].invalid {
-            border-color: var(--error-color);
+            border-color: #ff0000;
         }
-        
-        .input-hint {
-            font-size: 14px;
-            color: var(--text-light);
-            margin-top: 5px;
-        }
-        
-        .validation-message {
-            font-size: 14px;
-            margin-top: 5px;
-            min-height: 20px;
-            transition: all 0.3s;
-        }
-        
-        .validation-message.error {
-            color: var(--error-color);
-        }
-        
-        .validation-message.success {
-            color: var(--success-color);
-        }
-        
         button {
             width: 100%;
             padding: 14px;
-            background-color: var(--primary-color);
+            background-color: #00B900;
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 18px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.2s;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
-        
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
             transform: none;
         }
-        
         button:hover:not(:disabled) {
-            background-color: var(--primary-dark);
+            background-color: #009900;
             transform: scale(1.02);
         }
-        
         #status {
             margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
             min-height: 24px;
             transition: color 0.3s;
-            padding: 10px;
-            border-radius: 8px;
         }
-        
-        .success { 
-            color: var(--success-color); 
-            background-color: rgba(0, 185, 0, 0.1);
-            animation: pulse 1s;
-        }
-        
-        .error { 
-            color: var(--error-color); 
-            background-color: rgba(255, 0, 0, 0.1);
-        }
-        
-        .info { 
-            color: var(--info-color); 
-            background-color: rgba(0, 102, 204, 0.1);
-        }
-        
+        .success { color: #00B900; animation: pulse 1s; }
+        .error { color: #ff0000; }
+        .info { color: #0066cc; }
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+            50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        
         .footer {
             margin-top: 30px;
             font-size: 12px;
             color: #aaa;
         }
-        
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
+            border-top: 3px solid #00B900;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: 10px;
         }
-        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        
-        .privacy-info {
-            background-color: rgba(0, 102, 204, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            text-align: left;
-            font-size: 14px;
-        }
-        
-        .privacy-info h3 {
-            margin-top: 0;
-            font-size: 16px;
-            color: var(--info-color);
-        }
-        
-        .privacy-info ul {
-            padding-left: 20px;
-            margin-bottom: 0;
-        }
-        
-        .privacy-info li {
-            margin-bottom: 5px;
-        }
-        
-        .success-actions {
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .success-actions button {
-            margin-bottom: 10px;
-        }
-        
-        .btn-add-friend {
-            background-color: var(--primary-color);
-            font-size: 16px;
-        }
-        
-        .btn-secondary {
-            background-color: #6c757d;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        
-        .success-icon {
-            font-size: 48px;
-            color: var(--success-color);
-            margin: 15px 0;
-        }
-        
-        .success-message {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--success-color);
-            margin-bottom: 20px;
-        }
-        
-        /* 響應式調整 */
-        @media (max-width: 480px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 22px;
-            }
-            
-            p {
-                font-size: 15px;
-            }
-            
-            button {
-                font-size: 16px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">牛</div>
         <h1>歡迎加入無名牛排</h1>
-        <p>請填寫您的手機號碼進行綁定，完成後即可加入官方好友，獲取最新優惠資訊。</p>
+        <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
         
-        <div class="form-group">
-            <label for="phone">手機號碼</label>
-            <div class="input-wrapper">
-                <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
-            </div>
-            <div class="input-hint">請輸入09開頭的10位數字</div>
-            <div id="phoneValidation" class="validation-message"></div>
-        </div>
+        <label for="phone">手機號碼（09xxxxxxxx）</label>
+        <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
         
-        <button id="submitBtn" disabled>
-            <span>立即綁定</span>
-        </button>
+        <button id="submitBtn" disabled>立即綁定</button>
         
         <div id="status"></div>
-        
-        <div class="success-actions" id="successActions">
-            <div class="success-icon">✓</div>
-            <div class="success-message">綁定成功！</div>
-            <p>現在您可以加入官方好友，接收最新優惠與訂餐資訊</p>
-            <button id="addFriendBtn" class="btn-add-friend">
-                <span>加入官方好友</span>
-            </button>
-            <button id="closeBtn" class="btn-secondary">稍後加入</button>
-        </div>
-        
-        <div class="privacy-info">
-            <h3>隱私保護說明</h3>
-            <ul>
-                <li>我們僅收集必要資訊以提供訂餐服務</li>
-                <li>您的資料將受到嚴格保護，不會提供給第三方</li>
-                <li>您可以隨時聯繫我們刪除個人資料</li>
-            </ul>
-        </div>
         
         <div class="footer">
             資料僅用於訂餐服務，符合 LINE 隱私政策。
@@ -344,19 +141,14 @@
     </div>
 
     <script>
-        // 全域變數
-        const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **請務必更新為您的 LIFF ID**
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必更新為您的 GAS Web App URL**
-        const OFFICIAL_ACCOUNT_ID = '@無名牛排';  // <-- **請更新為您的官方帳號ID**
-        
-        // DOM 元素
+        // 全域變數 - 最終強化版
+        const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **已更新為您提供的新 LIFF ID**
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必確認您的 GAS Web App URL**
+        const BOT_CHANNEL_ID = '2008190577'; // <-- **請務必確認您的 Bot Channel ID**
+
         const statusEl = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
         const phoneInput = document.getElementById('phone');
-        const phoneValidationEl = document.getElementById('phoneValidation');
-        const successActions = document.getElementById('successActions');
-        const addFriendBtn = document.getElementById('addFriendBtn');
-        const closeBtn = document.getElementById('closeBtn');
 
         // 初始化 LIFF - 強化錯誤處理與重試邏輯
         async function initializeLiff() {
@@ -370,25 +162,31 @@
                     updateStatus('未登入 LINE，正在跳轉登入...', 'info');
                     liff.login({ redirectUri: window.location.href });
                 } else {
-                    // 檢查必要 scopes (profile)
-                    const profile = await liff.getProfile().catch(err => { 
-                        throw new Error('無法取得 profile: ' + err.message); 
-                    });
-                    updateStatus('已登入 LINE (' + profile.displayName + ')，準備綁定', 'info');
-                    enableSubmitButton();
+                    // 已登入，嘗試取得 profile
+                    try {
+                        const profile = await liff.getProfile();
+                        updateStatus('已登入 LINE (' + profile.displayName + ')，準備綁定', 'info');
+                        enableSubmitButton();
+                    } catch (profileError) {
+                        // 如果取得 profile 失敗，尤其可能是 token 過期
+                        console.error('取得 LINE Profile 失敗:', profileError);
+                        updateStatus('LINE 登入資訊過期或無法取得，正在重新登入...', 'info');
+                        // 嘗試重新登入以獲取新的 access token
+                        liff.login({ redirectUri: window.location.href });
+                    }
                 }
             } catch (error) {
                 updateStatus('LIFF 初始化失敗: ' + error.message + '。請刷新頁面重試。', 'error');
                 console.error('LIFF Init Error:', error);
                 // 可選: 自動重試一次
-                setTimeout(initializeLiff, 3000);
+                // setTimeout(initializeLiff, 3000);
             }
         }
 
         // 更新狀態訊息 - 強化動畫與清除
         function updateStatus(message, type) {
-            statusEl.textContent = message;
-            statusEl.className = type;
+            statusEl.textContent = message; // Set text content first
+            statusEl.className = type;      // Then apply class
             if (type === 'info') {
                 statusEl.innerHTML = '<span class="loading"></span>' + message;
             } else {
@@ -396,67 +194,27 @@
             }
         }
 
-        // 更新手機驗證訊息
-        function updatePhoneValidation(message, type) {
-            phoneValidationEl.textContent = message;
-            phoneValidationEl.className = 'validation-message ' + (type || '');
-        }
-
         // 啟用提交按鈕
         function enableSubmitButton() {
-            submitBtn.disabled = false;
-            validateInput(); // 初始驗證
+            // Only enable if phone input is valid and user is logged in
+            validateInput(); 
         }
 
         // 驗證手機格式 - 強化即時反饋
         function validatePhone(phone) {
-            const regex = /^09\d{8}$/;
+            const regex = /^09\d{8}$/; // 09開頭，後接8位數字
             const isValid = regex.test(phone);
-            
-            phoneInput.classList.toggle('invalid', phone && !isValid);
-            
-            if (!phone) {
-                updatePhoneValidation('');
-            } else if (isValid) {
-                updatePhoneValidation('✓ 手機格式正確', 'success');
-            } else {
-                updatePhoneValidation('✗ 請輸入正確的手機格式 (09xxxxxxxx)', 'error');
-            }
-            
+            phoneInput.classList.toggle('invalid', phone && !isValid); // Add invalid class if not empty and not valid
             return isValid;
         }
 
-        // 輸入即時驗證
+        // 輸入即時驗證，決定按鈕狀態
         function validateInput() {
             const phone = phoneInput.value.trim();
             const isPhoneValid = validatePhone(phone);
-            submitBtn.disabled = !isPhoneValid || !liff.isLoggedIn();
-        }
-
-        // 顯示成功操作按鈕
-        function showSuccessActions() {
-            successActions.style.display = 'block';
-            // 隱藏表單區域
-            document.querySelector('.form-group').style.display = 'none';
-            submitBtn.style.display = 'none';
-        }
-
-        // 加入官方好友
-        function addOfficialFriend() {
-            // 使用 LINE 官方方法加入好友
-            if (liff.isInClient()) {
-                // 在 LINE 內部瀏覽器中
-                liff.openWindow({
-                    url: `https://line.me/R/ti/p/${OFFICIAL_ACCOUNT_ID}`,
-                    external: false
-                });
-            } else {
-                // 在外部瀏覽器中
-                window.open(`https://line.me/R/ti/p/${OFFICIAL_ACCOUNT_ID}`, '_blank');
-            }
+            const isLoggedIn = liff.isLoggedIn();
             
-            // 提示用戶
-            updateStatus('正在開啟加入好友頁面...', 'info');
+            submitBtn.disabled = !(isPhoneValid && isLoggedIn); // Only enable if both are true
         }
 
         // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
@@ -480,44 +238,58 @@
                 const postData = {
                     source: 'LIFF',
                     customerLineId: profile.userId,
-                    customerName: profile.displayName || '',
+                    customerName: profile.displayName || '', // Fallback to empty string if null
                     customerPhone: phoneInputValue,
-                    pictureUrl: profile.pictureUrl || '',
-                    statusMessage: profile.statusMessage || '',
-                    sourceType: 'QR_ADD_FRIEND',
-                    botId: '2008190577'  // <-- **請務必更新為您的 Bot Channel ID**
+                    pictureUrl: profile.pictureUrl || '',     // Fallback to empty string if null
+                    statusMessage: profile.statusMessage || '', // Fallback to empty string if null
+                    sourceType: 'LIFF_BINDING', // Clarify source type for your GAS
+                    botId: BOT_CHANNEL_ID       // 使用上方定義的 BOT_CHANNEL_ID
                 };
 
                 // 發送 POST 到 GAS - 加 timeout 與錯誤捕捉
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒 timeout
+                const timeoutId = setTimeout(() => {
+                    controller.abort(); // Abort the fetch request if timeout
+                    updateStatus('網路請求超時，請檢查網路後重試。', 'error');
+                    enableSubmitButton();
+                }, 15000); // 15 秒 timeout
 
                 await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',  // LIFF 內必須
+                    mode: 'no-cors',  // LIFF 內必須 (跨域提交到 GAS Web App)
                     cache: 'no-cache',
-                    signal: controller.signal,
+                    signal: controller.signal, // Connect the abort controller
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json' // Even with no-cors, this is good practice
                     },
                     body: JSON.stringify(postData)
-                }).then(() => {
-                    clearTimeout(timeoutId);
-                }).catch(err => {
-                    clearTimeout(timeoutId);
-                    throw new Error('網路請求失敗: ' + err.message);
                 });
+                
+                clearTimeout(timeoutId); // Clear timeout if fetch completes
 
                 // 注意: no-cors 模式下無法讀取 response，但假設成功（GAS 會處理並寫入 Sheets）
-                updateStatus('', 'success');
+                updateStatus('綁定成功！視窗即將關閉', 'success');
                 console.log('Binding submitted successfully:', postData);
-                
-                // 顯示成功操作按鈕
-                showSuccessActions();
+
+                // 延遲關閉 LIFF 視窗
+                setTimeout(() => {
+                    if (liff.isInClient()) {
+                        liff.closeWindow();
+                    } else {
+                        // 如果不在 LINE 客戶端內，提供提示讓用戶手動關閉
+                        alert('綁定完成！您可以安全關閉此頁面。');
+                    }
+                }, 2000);
 
             } catch (error) {
-                updateStatus('綁定失敗: ' + error.message + '。請檢查網路或重試。', 'error');
-                console.error('Submit Error:', error);
+                // Check if the error was due to an abort signal (timeout)
+                if (error.name === 'AbortError') {
+                    // The timeout message is already displayed by the timeoutId function
+                    console.warn('Fetch request was aborted (timeout).');
+                } else {
+                    updateStatus('綁定失敗: ' + error.message + '。請檢查網路或重試。', 'error');
+                    console.error('Submit Error:', error);
+                }
                 enableSubmitButton(); // 重新啟用按鈕
             }
         }
@@ -532,38 +304,28 @@
 
             // 手機輸入即時驗證
             phoneInput.addEventListener('input', validateInput);
-            
-            // 手機輸入框焦點事件
-            phoneInput.addEventListener('focus', function() {
-                if (this.value.trim() === '') {
-                    updatePhoneValidation('請輸入您的手機號碼');
-                }
-            });
-            
-            // 手機輸入框失去焦點事件
-            phoneInput.addEventListener('blur', function() {
-                if (this.value.trim() === '') {
-                    updatePhoneValidation('');
-                }
-            });
-
-            // 加入好友按鈕
-            addFriendBtn.addEventListener('click', addOfficialFriend);
-            
-            // 關閉頁面按鈕
-            closeBtn.addEventListener('click', function() {
-                if (liff.isInClient()) {
-                    liff.closeWindow();
-                } else {
-                    alert('綁定完成！您可以關閉此頁面。');
-                }
-            });
-
-            // 可選: 取得 LIFF 其他資訊 (e.g., OS, language)
-            if (liff.isInClient()) {
-                console.log('LIFF Context:', liff.getContext());
-            }
         });
+
+        // 監聽 LIFF 的 ready 事件，確保 LIFF SDK 完全載入並準備就緒
+        liff.ready.then(() => {
+            console.log('LIFF SDK is ready.');
+            // This is a good place to do initial checks if needed,
+            // but initializeLiff() already handles most of it.
+        }).catch((err) => {
+            console.error('LIFF SDK failed to initialize or prepare:', err);
+            updateStatus('LIFF SDK 載入失敗，請檢查網路或稍後重試。', 'error');
+        });
+
+        // 額外提示：如果LIFF在非LINE環境中打開
+        if (!liff.isInClient() && liff.ready) {
+             liff.ready.then(() => {
+                // Only show this warning if it's not a login redirect and not in LINE client
+                if (!liff.isLoggedIn()) { // Check if not logged in in case it's an external browser opening the LIFF URL
+                    console.warn('此頁面建議在 LINE 應用程式內開啟以獲得完整功能。');
+                    // updateStatus('請在 LINE 應用程式內開啟此頁面。', 'info');
+                }
+             });
+        }
     </script>
 </body>
 </html>
