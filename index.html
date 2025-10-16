@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>無名牛排 - 加入好友並記錄</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script> <!-- 生產環境建議本地安裝 -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
     <!-- 配置Tailwind顏色和字體 -->
@@ -77,7 +77,7 @@
                 
                 <!-- 添加好友按鈕 -->
                 <div class="text-center mb-10">
-                    <button id="addFriendBtn" onclick="addFriend()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition duration-300 flex items-center justify-center mx-auto">
+                    <button id="addFriendBtn" onclick="addFriend()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition duration-300 flex items-center justify-center mx-auto" disabled>
                         <i class="fa fa-user-plus mr-2"></i>添加好友 @561zotgq
                     </button>
                 </div>
@@ -126,6 +126,7 @@
                     liff.login({ redirectUri: window.location.href });
                 } else {
                     document.getElementById('status').textContent = '成功加入！正在記錄您的資料...';
+                    document.getElementById('addFriendBtn').disabled = false; // 初始化成功後啟用按鈕
                     await sendToSheet();
                 }
             } catch (error) {
@@ -161,6 +162,11 @@
         }
 
         function addFriend() {
+            if (!liff.isApiAvailable('shareTargetPicker')) {
+                document.getElementById('status').textContent = '錯誤：當前環境不支援添加好友功能。';
+                console.error('shareTargetPicker not available');
+                return;
+            }
             liff.shareTargetPicker([
                 { type: 'friend', id: '@561zotgq' }
             ]).then(function (res) {
