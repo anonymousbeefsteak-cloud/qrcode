@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>無名牛排 - 加入好友並記錄</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script> <!-- 生產環境建議本地安裝 -->
+    <script src="https://cdn.tailwindcss.com"></script> <!-- 生產環境建議本地安裝以避免警告 -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
     <!-- 配置Tailwind顏色和字體 -->
@@ -117,7 +117,7 @@
     <script>
         async function initializeLiff() {
             try {
-                await liff.init({ liffId: '2008276630-bYNjwMx7' });
+                await liff.init({ liffId: '2008289130-9XPR8Kpj' }); // 更新為新 LIFF ID
                 if (!liff.isInClient()) {
                     document.getElementById('status').textContent = '錯誤：請在 LINE App 內掃描 QR Code 開啟此頁面。';
                     return;
@@ -130,7 +130,7 @@
                 }
             } catch (error) {
                 document.getElementById('status').textContent = '初始化失敗: ' + error.message + '。請檢查 LIFF 設定。';
-                console.error('LIFF Error:', error); // 記錄到 Console 方便除錯
+                console.error('LIFF Error:', error);
             }
         }
 
@@ -155,7 +155,7 @@
                 setTimeout(() => liff.closeWindow(), 2000);
             } catch (error) {
                 document.getElementById('status').textContent = '記錄失敗: ' + error.message + '。請再試一次。';
-                console.error('Fetch Error:', error); // 記錄到 Console
+                console.error('Fetch Error:', error);
             }
         }
 
