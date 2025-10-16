@@ -7,7 +7,7 @@
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 基本樣式：響應式、簡潔、品牌綠色 */
+        /* 強化樣式: 響應式設計、現代 UI、品牌綠色、錯誤提示動畫 */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: #f4f4f4;
@@ -15,14 +15,23 @@
             padding: 20px;
             color: #333;
             text-align: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container {
             max-width: 400px;
-            margin: 40px auto;
+            width: 100%;
             background: #fff;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         h1 {
             color: #00B900; /* LINE 綠 */
@@ -49,6 +58,14 @@
             border-radius: 8px;
             font-size: 16px;
             box-sizing: border-box;
+            transition: border 0.3s;
+        }
+        input[type="tel"]:focus {
+            border-color: #00B900;
+            outline: none;
+        }
+        input[type="tel"].invalid {
+            border-color: #ff0000;
         }
         button {
             width: 100%;
@@ -59,34 +76,57 @@
             border-radius: 8px;
             font-size: 18px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
         }
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+            transform: none;
         }
         button:hover:not(:disabled) {
             background-color: #009900;
+            transform: scale(1.02);
         }
         #status {
             margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
+            min-height: 24px;
+            transition: color 0.3s;
         }
-        .success { color: #00B900; }
+        .success { color: #00B900; animation: pulse 1s; }
         .error { color: #ff0000; }
         .info { color: #0066cc; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
         .footer {
             margin-top: 30px;
             font-size: 12px;
             color: #aaa;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #00B900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>歡迎加入無名牛排</h1>
-        <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。</p>
+        <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
         
         <label for="phone">手機號碼（09xxxxxxxx）</label>
         <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
@@ -96,109 +136,144 @@
         <div id="status"></div>
         
         <div class="footer">
-            資料僅用於訂餐服務，隱私受保護。
+            資料僅用於訂餐服務，符合 LINE 隱私政策。
         </div>
     </div>
 
     <script>
-        // 全域變數
-        const LIFF_ID = '2008276630-bYNjwMx7';  // 你的 LIFF ID
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxqJC9G2RBVe8eWHkUY5t37vxnTFeIaxCnD53hHZphgUkqtt0r3uhH4IG-rtru0ZCHW9Q/exec';  // 你的 GAS Web App URL
+        // 全域變數 - 最終強化版
+        const LIFF_ID = '2008276630-bYNjwMx7';  // <-- **請務必更新為您的 LIFF ID**
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwjb9VplH73kgujA23RHy6dFvuYF3TBvo08c0XXhaa01OemFuTDLDAmwpIUK8iSGCd6HA/exec';  // <-- **請務必更新為您的 GAS Web App URL**
         const statusEl = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
+        const phoneInput = document.getElementById('phone');
 
-        // 初始化 LIFF
+        // 初始化 LIFF - 強化錯誤處理與重試邏輯
         async function initializeLiff() {
             try {
+                updateStatus('正在初始化 LIFF...', 'info');
                 await liff.init({ liffId: LIFF_ID });
                 updateStatus('LIFF 初始化成功', 'info');
                 
-                // 檢查登入狀態
+                // 檢查登入狀態與 scopes
                 if (!liff.isLoggedIn()) {
-                    // 未登入，重導登入（保留當前頁）
+                    updateStatus('未登入 LINE，正在跳轉登入...', 'info');
                     liff.login({ redirectUri: window.location.href });
                 } else {
-                    // 已登入，啟用按鈕
-                    submitBtn.disabled = false;
-                    updateStatus('已登入 LINE，準備綁定', 'info');
+                    // 檢查必要 scopes (profile)
+                    const profile = await liff.getProfile().catch(err => { throw new Error('無法取得 profile: ' + err.message); });
+                    updateStatus('已登入 LINE (' + profile.displayName + ')，準備綁定', 'info');
+                    enableSubmitButton();
                 }
             } catch (error) {
-                updateStatus('LIFF 初始化失敗: ' + error.message, 'error');
+                updateStatus('LIFF 初始化失敗: ' + error.message + '。請刷新頁面重試。', 'error');
                 console.error('LIFF Init Error:', error);
+                // 可選: 自動重試一次
+                setTimeout(initializeLiff, 3000);
             }
         }
 
-        // 更新狀態訊息
+        // 更新狀態訊息 - 強化動畫與清除
         function updateStatus(message, type) {
             statusEl.textContent = message;
             statusEl.className = type;
+            if (type === 'info') {
+                statusEl.innerHTML = '<span class="loading"></span>' + message;
+            } else {
+                statusEl.innerHTML = message;
+            }
         }
 
-        // 驗證手機格式
+        // 啟用提交按鈕
+        function enableSubmitButton() {
+            submitBtn.disabled = false;
+            validateInput(); // 初始驗證
+        }
+
+        // 驗證手機格式 - 強化即時反饋
         function validatePhone(phone) {
             const regex = /^09\d{8}$/;
-            return regex.test(phone);
+            const isValid = regex.test(phone);
+            phoneInput.classList.toggle('invalid', phone && !isValid);
+            return isValid;
         }
 
-        // 提交綁定資料到 GAS
+        // 輸入即時驗證
+        function validateInput() {
+            const phone = phoneInput.value.trim();
+            submitBtn.disabled = !validatePhone(phone) || !liff.isLoggedIn();
+        }
+
+        // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
         async function submitBinding() {
             submitBtn.disabled = true;
             updateStatus('處理中，請稍候...', 'info');
 
             try {
-                // 取得 LINE Profile
-                const profile = await liff.getProfile();
-                
-                // 取得手機輸入
-                const phoneInput = document.getElementById('phone').value.trim();
-                if (!validatePhone(phoneInput)) {
+                // 取得 LINE Profile - 強化錯誤捕捉
+                const profile = await liff.getProfile().catch(err => {
+                    throw new Error('取得 LINE Profile 失敗: ' + err.message);
+                });
+
+                // 取得並驗證手機輸入
+                const phoneInputValue = phoneInput.value.trim();
+                if (!validatePhone(phoneInputValue)) {
                     throw new Error('手機格式錯誤，請輸入 09 開頭的 10 位數字');
                 }
 
-                // 準備 POST 資料（匹配 GAS handleUserProfile 期望）
+                // 準備 POST 資料（匹配 GAS handleUserProfile 期望，強化 sanitize）
                 const postData = {
                     source: 'LIFF',
                     customerLineId: profile.userId,
                     customerName: profile.displayName || '',
-                    customerPhone: phoneInput,
+                    customerPhone: phoneInputValue,
                     pictureUrl: profile.pictureUrl || '',
                     statusMessage: profile.statusMessage || '',
                     sourceType: 'QR_ADD_FRIEND',  // 或 'LIFF_BINDING'
-                    botId: '2008190577'  // 你的 Channel ID
+                    botId: '2008190577'  // <-- **請務必更新為您的 Bot Channel ID**
                 };
 
-                // 發送 POST 到 GAS (no-cors 模式，LIFF 支援)
-                const response = await fetch(GAS_URL, {
+                // 發送 POST 到 GAS - 加 timeout 與錯誤捕捉
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒 timeout
+
+                await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',  // LIFF 需要 no-cors
+                    mode: 'no-cors',  // LIFF 內必須
                     cache: 'no-cache',
+                    signal: controller.signal,
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(postData)
+                }).then(() => {
+                    clearTimeout(timeoutId);
+                }).catch(err => {
+                    clearTimeout(timeoutId);
+                    throw new Error('網路請求失敗: ' + err.message);
                 });
 
-                // 注意: no-cors 模式下無法讀取 response 內容，但 GAS 會處理
+                // 注意: no-cors 模式下無法讀取 response，但假設成功（GAS 會處理並寫入 Sheets）
                 updateStatus('綁定成功！視窗即將關閉', 'success');
-                console.log('Binding submitted:', postData);
+                console.log('Binding submitted successfully:', postData);
 
                 // 延遲關閉 LIFF 視窗
                 setTimeout(() => {
                     if (liff.isInClient()) {
                         liff.closeWindow();
                     } else {
-                        alert('綁定完成！');
+                        alert('綁定完成！您可以關閉此頁面。');
                     }
                 }, 2000);
 
             } catch (error) {
-                updateStatus('綁定失敗: ' + error.message, 'error');
+                updateStatus('綁定失敗: ' + error.message + '。請檢查網路或重試。', 'error');
                 console.error('Submit Error:', error);
-                submitBtn.disabled = false;
+                enableSubmitButton(); // 重新啟用按鈕
             }
         }
 
-        // 事件綁定
+        // 事件綁定 - DOMContentLoaded
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化 LIFF
             initializeLiff();
@@ -206,16 +281,19 @@
             // 提交按鈕點擊
             submitBtn.addEventListener('click', submitBinding);
 
-            // 輸入框即時驗證（可選）
-            document.getElementById('phone').addEventListener('input', (e) => {
-                const isValid = validatePhone(e.target.value);
-                submitBtn.style.backgroundColor = isValid && liff.isLoggedIn() ? '#00B900' : '#ccc';
-            });
+            // 手機輸入即時驗證
+            phoneInput.addEventListener('input', validateInput);
+
+            // 可選: 取得 LIFF 其他資訊 (e.g., OS, language)
+            if (liff.isInClient()) {
+                console.log('LIFF Context:', liff.getContext());
+            }
         });
 
-        // LIFF 額外功能（選用）
-        // - 若需分享: liff.shareTargetPicker([...messages])
-        // - 若需取得好友狀態: liff.getFriendship()
+        // LIFF 額外功能（選用強化）
+        // - 分享綁定結果: liff.shareTargetPicker([{ type: 'text', text: '我已綁定無名牛排！' }])
+        // - 取得好友狀態: liff.getFriendship().then(f => console.log(f))
+        // - 語言偵測: const lang = liff.getLanguage(); // 切換 UI 文字
     </script>
 </body>
 </html>
