@@ -83,7 +83,7 @@
         async function initLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF Initialization successful.');
+                console.log('LIFF Initialization successful. Context:', liff.getContext());
             } catch (error) {
                 console.error('LIFF Initialization failed:', error);
                 showStatus('LIFF 初始化失敗，請確認設定或稍後再試。', 'error');
@@ -107,7 +107,11 @@
                 }
 
                 const profile = await liff.getProfile();
-                console.log('Profile:', profile);
+                console.log('Profile acquired:', profile);
+
+                if (!profile || !profile.userId) {
+                    throw new Error('無法獲取用戶資料，請檢查 LIFF 權限。');
+                }
 
                 const userData = {
                     userId: profile.userId,
@@ -118,7 +122,7 @@
                     source: `LIFF 掃碼 ${BOT_LINE_ID}`,
                     botId: BOT_LINE_ID.replace('@', '')
                 };
-                console.log('UserData sent:', userData);
+                console.log('UserData prepared for send:', userData);
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -131,12 +135,15 @@
                 });
 
                 clearTimeout(timeoutId);
+                console.log('Fetch response status:', response.status);
+                console.log('Fetch response headers:', response.headers);
 
                 if (!response.ok) {
                     throw new Error(`HTTP 錯誤！狀態: ${response.status}`);
                 }
 
                 const result = await response.json();
+                console.log('Server response:', result);
                 if (result.status === 'success') {
                     showStatus(`歡迎 ${profile.displayName}！您的資訊已記錄。`, 'success');
                     liff.openWindow({
