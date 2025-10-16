@@ -78,13 +78,13 @@
     <script>
         // --- CONFIGURATION ---
         // 1. Replace 'YOUR_LIFF_ID_HERE' with your actual LIFF Channel ID.
-        const LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+        const LIFF_ID = '2008276630-bYNjwMx7'; // 填入你的LIFF ID
 
         // 2. Replace 'YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE' with the "Web app URL" after deploying your Google Apps Script.
-        const APPS_SCRIPT_URL = 'YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE'; 
-        
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznzREwLTQ3wIYXW5fbuRoA0Ky6nUToUlHXK3gnuRQVbW7LdOG7EGpyPtfjXh08r58qZQ/exec'; // 填入你的Google Apps Script URL
+
         // 3. Confirm this matches your LINE Official Account's ID (e.g., '@561zotgq').
-        const BOT_LINE_ID = '@561zotgq'; 
+        const BOT_LINE_ID = '@561zotgq'; // 填入你的LINE官方帳號ID
         // --- END CONFIGURATION ---
 
         async function initLiff() {
@@ -109,7 +109,7 @@
                 if (!liff.isInClient()) {
                     showStatus('請在LINE應用程式內開啟此頁面，正在導向加好友頁面...', 'loading');
                     // Redirect to the LINE Official Account page if not in LIFF
-                    window.location.href = `https://liff.line.me/2008276630-bYNjwMx7`;
+                    window.location.href = `https://line.me/R/ti/p/${BOT_LINE_ID}`;
                     return; // Stop further execution
                 }
 
