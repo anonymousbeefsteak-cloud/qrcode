@@ -1,66 +1,26 @@
-// 🔥 立即修復版 - 自動建立 Sheet
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const userId = data.userId;
-    const displayName = data.displayName;
-    const pictureUrl = data.pictureUrl || '';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L2O</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body style="text-align: center; padding: 20px;">
+    <h1>🎉 無名牛排 加好友成功！</h1>
+    <div id="status">👋 歡迎加入！</div>
 
-    if (!userId) {
-      return ContentService.createTextOutput(JSON.stringify({ 
-        success: false, 
-        message: '缺少 userId' 
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
+    <script>
+        const LIFF_ID = '2008276630-bYNjwMx7';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyLhtMwr97Zye6YcMcQobYHW15c8Pd1tSz7yglothG4kM2zb2947PmpcYuVNbXOOfxr/exec'; // ← 貼這裡
 
-    // 🔥 自動建立或取得 Sheet
-    let sheet;
-    try {
-      sheet = SpreadsheetApp.openById('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms').getActiveSheet();
-    } catch (e) {
-      // 如果沒有 Sheet，自動建立新的一個
-      const ss = SpreadsheetApp.create('無名牛排會員資料');
-      sheet = ss.getActiveSheet();
-      sheet.getRange(1, 1, 1, 4).setValues([['時間戳記', 'User ID', '姓名', '頭像 URL']]);
-    }
-    
-    // 設定標題（如果需要）
-    if (sheet.getLastRow() === 0) {
-      sheet.getRange(1, 1, 1, 4).setValues([['時間戳記', 'User ID', '姓名', '頭像 URL']]);
-    }
-
-    // 檢查重複
-    const dataRange = sheet.getDataRange();
-    if (dataRange.getNumRows() > 1) {
-      const existingData = dataRange.getValues();
-      const userExists = existingData.slice(1).some(row => row[1] === userId);
-      if (userExists) {
-        return ContentService.createTextOutput(JSON.stringify({ 
-          success: true, 
-          message: '用戶已存在' 
-        })).setMimeType(ContentService.MimeType.JSON);
-      }
-    }
-
-    // 🔥 新增資料
-    const timestamp = new Date();
-    sheet.appendRow([timestamp, userId, displayName, pictureUrl]);
-
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      message: '記錄到會員資料庫成功！' 
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    // 🔥 詳細錯誤記錄
-    console.log('錯誤詳情:', error);
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: false, 
-      message: '網路錯誤：' + error.toString() 
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet() {
-  return ContentService.createTextOutput('後端正常');
-}
+        async function init() {
+            await liff.init({ liffId: LIFF_ID });
+            const profile = await liff.getProfile();
+            document.getElementById('status').innerHTML = `👋 ${profile.displayName}`;
+            window.location.href = BACKEND_URL;
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
