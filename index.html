@@ -84,6 +84,13 @@
                     <p class="text-gray-700">（掃碼功能已由 LIFF 自動處理）</p>
                 </div>
                 
+                <!-- 添加好友按鈕 -->
+                <div class="text-center mb-10">
+                    <button id="addFriendBtn" onclick="addFriend()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition duration-300 flex items-center justify-center mx-auto">
+                        <i class="fa fa-user-plus mr-2"></i>添加好友 @561zotgq
+                    </button>
+                </div>
+                
                 <!-- 步驟說明 -->
                 <div class="bg-white rounded-xl p-6 shadow-md">
                     <h3 class="text-xl font-bold mb-4 flex items-center">
@@ -157,6 +164,22 @@
             } catch (error) {
                 document.getElementById('status').textContent = '記錄失敗: ' + error.message + '。請再試一次。';
             }
+        }
+
+        // 添加好友功能
+        function addFriend() {
+            liff.shareTargetPicker([
+                {
+                    type: 'friend',
+                    id: '@561zotgq' // LINE ID
+                }
+            ]).then(function (res) {
+                if (res) {
+                    document.getElementById('status').textContent = '已發送添加好友請求！請檢查 LINE 確認。';
+                }
+            }).catch(function (error) {
+                document.getElementById('status').textContent = '添加好友失敗: ' + error.message + '。請檢查 LINE ID 或網路。';
+            });
         }
 
         window.onload = initializeLiff;
