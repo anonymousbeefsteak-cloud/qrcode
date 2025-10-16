@@ -11,7 +11,7 @@
             margin: 0;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            min-height: 10vh; /* Reduced for better mobile fit if content is short */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -24,6 +24,7 @@
             text-align: center;
             max-width: 400px;
             width: 100%;
+            margin: 20px; /* Add some margin for smaller screens */
         }
         .logo {
             width: 120px;
@@ -50,6 +51,7 @@
             width: 100%;
             margin-bottom: 20px;
             transition: all 0.3s;
+            box-sizing: border-box; /* Include padding in width */
         }
         .add-btn:hover { background: #00a300; transform: translateY(-2px); }
         .status {
@@ -57,6 +59,7 @@
             border-radius: 10px;
             margin-top: 15px;
             font-weight: bold;
+            word-break: break-word; /* Prevent long messages from overflowing */
         }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
@@ -73,64 +76,109 @@
     </div>
 
     <script>
+        // --- CONFIGURATION ---
+        // 1. Replace 'YOUR_LIFF_ID_HERE' with your actual LIFF Channel ID.
+        const LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+
+        // 2. Replace 'YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE' with the "Web app URL" after deploying your Google Apps Script.
+        const APPS_SCRIPT_URL = 'YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE'; 
+        
+        // 3. Confirm this matches your LINE Official Account's ID (e.g., '@561zotgq').
+        const BOT_LINE_ID = '@561zotgq'; 
+        // --- END CONFIGURATION ---
+
         async function initLiff() {
             try {
                 await liff.init({
-                    liffId: '2008276630-bYNjwMx7'
+                    liffId: LIFF_ID
                 });
-                console.log('LIFF 初始化成功');
+                console.log('LIFF Initialization successful.');
+                // You can add logic here to check if the user is already a friend if needed
+                // For example: liff.getFriendship().then(data => { if (data.friendFlag) showStatus('您已是好友！', 'success'); });
             } catch (error) {
-                showStatus('LIFF 初始化失敗', 'error');
+                console.error('LIFF Initialization failed:', error);
+                showStatus('LIFF 初始化失敗，請確認設定或稍後再試。', 'error');
             }
         }
 
         async function addFriend() {
             try {
-                showStatus('正在加好友...', 'loading');
-                
+                showStatus('正在處理您的請求...', 'loading');
+
+                // Check if LIFF is opened within the LINE app
                 if (!liff.isInClient()) {
-                    showStatus('請在LINE內開啟', 'error');
-                    window.location.href = 'line://ti/p/@561zotgq'; // 確認與QR碼ID匹配
-                    return;
+                    showStatus('請在LINE應用程式內開啟此頁面，正在導向加好友頁面...', 'loading');
+                    // Redirect to the LINE Official Account page if not in LIFF
+                    window.location.href = `https://liff.line.me/2008276630-bYNjwMx7`;
+                    return; // Stop further execution
                 }
 
+                // Check if the user is logged into LINE through LIFF
+                if (!liff.isLoggedIn()) {
+                    showStatus('請先登入LINE帳號...', 'loading');
+                    // Redirect to LINE login page, then back to this LIFF app
+                    liff.login();
+                    return; // Stop further execution
+                }
+
+                // Get user profile information
                 const profile = await liff.getProfile();
                 
+                // Prepare user data for Google Apps Script
                 const userData = {
                     userId: profile.userId,
                     displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    statusMessage: liff.getDecodedIdToken()?.email || '',
+                    pictureUrl: profile.pictureUrl || '', // Use empty string if no picture
+                    // Attempt to get email from ID Token; 'N/A' if not available or scope not granted
+                    statusMessage: liff.getDecodedIdToken()?.email || 'N/A (Email scope not granted or available)',
                     timestamp: new Date().toISOString(),
-                    source: 'QR掃碼 @561zotgq',
-                    botId: '561zotgq'
+                    source: `LIFF 掃碼 ${BOT_LINE_ID}`, // Indicate source is LIFF
+                    botId: BOT_LINE_ID.replace('@', '') // Remove '@' for cleaner data in sheet
                 };
 
-                await fetch('https://script.google.com/macros/s/AKfycbzWiO9n3lDm7zsGiRNlDRf3FrgqGj2nNHCA0SiZrHwtrwx7rMXfvuzXG4ZyqlNpYeVr/exec', {
+                // Send data to Google Apps Script
+                // Using 'no-cors' mode means we can't read the response from Apps Script directly
+                // but it helps prevent CORS issues for simple data logging.
+                await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    mode: 'no-cors', 
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
 
-                showStatus(`歡迎 ${profile.displayName}！已記錄您的資訊`, 'success');
-                
+                showStatus(`歡迎 ${profile.displayName}！您的資訊已記錄。正在導向加好友頁面...`, 'success');
+
+                // Open the LINE official account friend adding page in an external browser/LINE app
+                // This is generally the most reliable way to prompt "add friend" from LIFF.
+                liff.openWindow({
+                    url: `https://line.me/R/ti/p/${BOT_LINE_ID}`,
+                    external: true // Open in the system browser or LINE app directly
+                });
+
+                // Optionally, close the LIFF window after a short delay
+                // This gives the user time to see the status message before the window closes.
                 setTimeout(() => {
                     liff.closeWindow();
-                }, 3000);
+                }, 3000); 
 
             } catch (error) {
-                console.error('錯誤:', error);
-                showStatus('加好友失敗，請重試', 'error');
+                console.error('加好友流程發生錯誤:', error);
+                let errorMessage = '加好友失敗，請重試。';
+                if (error.code === '2') { // LIFF error code 2 often means network issues or invalid LIFF ID
+                    errorMessage = 'LIFF 應用程式發生錯誤，請檢查網路連線或 LIFF ID 設定。';
+                }
+                showStatus(errorMessage, 'error');
             }
         }
 
+        // Helper function to display status messages
         function showStatus(message, type) {
             const statusEl = document.getElementById('status');
             statusEl.textContent = message;
-            statusEl.className = `status ${type}`;
+            statusEl.className = `status ${type}`; // Apply CSS class for styling
         }
 
+        // Initialize LIFF when the window loads
         window.onload = initLiff;
     </script>
 </body>
