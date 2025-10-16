@@ -88,38 +88,34 @@
             try {
                 showStatus('正在加好友...', 'loading');
                 
-                // 檢查是否已加好友
                 if (!liff.isInClient()) {
                     showStatus('請在LINE內開啟', 'error');
-                    window.location.href = 'line://ti/p/@beefsteak';
+                    window.location.href = 'line://ti/p/@561zotgq'; // ← 你的 QR 碼 ID
                     return;
                 }
 
                 const profile = await liff.getProfile();
                 
-                // 獲取用戶資訊
                 const userData = {
                     userId: profile.userId,
                     displayName: profile.displayName,
                     pictureUrl: profile.pictureUrl || '',
                     statusMessage: liff.getDecodedIdToken()?.email || '',
                     timestamp: new Date().toISOString(),
-                    source: 'QR掃碼'
+                    source: 'QR掃碼 @561zotgq', // ← 標記你的 QR 碼
+                    botId: '561zotgq'
                 };
 
-                // 發送到Google Sheets
-                const response = await fetch('https://script.google.com/macros/s/AKfycbw2VTozFGWPuFMBLc37Prca0YKvnPyU8YQQkIQ6VKW-Ps0bgLv4Gzy3HlZlvY3GYNePiA/exec', {
+                // 發送到你的 Google Sheets
+                await fetch('https://script.google.com/macros/s/AKfycbwSBOQguij32z-ioXCR-nlDpawyXj64bd1YjjvhcsUtLMrGCnjILVnNi6RMIz19ZRS0eQ/exec', {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
 
                 showStatus(`歡迎 ${profile.displayName}！已記錄您的資訊`, 'success');
                 
-                // 3秒後關閉LIFF
                 setTimeout(() => {
                     liff.closeWindow();
                 }, 3000);
@@ -136,7 +132,6 @@
             statusEl.className = `status ${type}`;
         }
 
-        // 頁面載入時初始化
         window.onload = initLiff;
     </script>
 </body>
