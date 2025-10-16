@@ -8,132 +8,284 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         /* 強化樣式: 響應式設計、現代 UI、品牌綠色、錯誤提示動畫 */
+        :root {
+            --primary-color: #00B900;
+            --primary-dark: #009900;
+            --error-color: #ff0000;
+            --warning-color: #ff9800;
+            --success-color: #00B900;
+            --info-color: #0066cc;
+            --text-color: #333;
+            --text-light: #555;
+            --border-color: #ddd;
+            --bg-color: #f4f4f4;
+            --white: #fff;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: var(--bg-color);
             margin: 0;
             padding: 20px;
-            color: #333;
+            color: var(--text-color);
             text-align: center;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            line-height: 1.6;
         }
+        
         .container {
             max-width: 400px;
             width: 100%;
-            background: #fff;
+            background: var(--white);
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
             animation: fadeIn 0.5s ease-in-out;
         }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
         h1 {
-            color: #00B900; /* LINE 綠 */
+            color: var(--primary-color);
             font-size: 24px;
             margin-bottom: 10px;
         }
+        
         p {
             font-size: 16px;
-            color: #555;
+            color: var(--text-light);
             margin-bottom: 20px;
         }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
         label {
             display: block;
-            text-align: left;
             font-weight: bold;
             margin-bottom: 8px;
-            color: #333;
+            color: var(--text-color);
         }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
         input[type="tel"] {
             width: 100%;
             padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 16px;
-            box-sizing: border-box;
             transition: border 0.3s;
         }
+        
         input[type="tel"]:focus {
-            border-color: #00B900;
+            border-color: var(--primary-color);
             outline: none;
         }
+        
         input[type="tel"].invalid {
-            border-color: #ff0000;
+            border-color: var(--error-color);
         }
+        
+        .input-hint {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+        
+        .validation-message {
+            font-size: 14px;
+            margin-top: 5px;
+            min-height: 20px;
+            transition: all 0.3s;
+        }
+        
+        .validation-message.error {
+            color: var(--error-color);
+        }
+        
+        .validation-message.success {
+            color: var(--success-color);
+        }
+        
         button {
             width: 100%;
             padding: 14px;
-            background-color: #00B900;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 18px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.2s;
+            font-weight: bold;
         }
+        
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
             transform: none;
         }
+        
         button:hover:not(:disabled) {
-            background-color: #009900;
+            background-color: var(--primary-dark);
             transform: scale(1.02);
         }
+        
         #status {
             margin-top: 20px;
             font-size: 16px;
             font-weight: bold;
             min-height: 24px;
             transition: color 0.3s;
+            padding: 10px;
+            border-radius: 8px;
         }
-        .success { color: #00B900; animation: pulse 1s; }
-        .error { color: #ff0000; }
-        .info { color: #0066cc; }
+        
+        .success { 
+            color: var(--success-color); 
+            background-color: rgba(0, 185, 0, 0.1);
+            animation: pulse 1s;
+        }
+        
+        .error { 
+            color: var(--error-color); 
+            background-color: rgba(255, 0, 0, 0.1);
+        }
+        
+        .info { 
+            color: var(--info-color); 
+            background-color: rgba(0, 102, 204, 0.1);
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
+        
         .footer {
             margin-top: 30px;
             font-size: 12px;
             color: #aaa;
         }
+        
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #00B900;
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: 10px;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        .privacy-info {
+            background-color: rgba(0, 102, 204, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .privacy-info h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: var(--info-color);
+        }
+        
+        .privacy-info ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .privacy-info li {
+            margin-bottom: 5px;
+        }
+        
+        /* 響應式調整 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            p {
+                font-size: 15px;
+            }
+            
+            button {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="logo">牛</div>
         <h1>歡迎加入無名牛排</h1>
         <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
         
-        <label for="phone">手機號碼（09xxxxxxxx）</label>
-        <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
+        <div class="form-group">
+            <label for="phone">手機號碼</label>
+            <div class="input-wrapper">
+                <input type="tel" id="phone" placeholder="0912345678" maxlength="10">
+            </div>
+            <div class="input-hint">請輸入09開頭的10位數字</div>
+            <div id="phoneValidation" class="validation-message"></div>
+        </div>
         
         <button id="submitBtn" disabled>立即綁定</button>
         
         <div id="status"></div>
+        
+        <div class="privacy-info">
+            <h3>隱私保護說明</h3>
+            <ul>
+                <li>我們僅收集必要資訊以提供訂餐服務</li>
+                <li>您的資料將受到嚴格保護，不會提供給第三方</li>
+                <li>您可以隨時聯繫我們刪除個人資料</li>
+            </ul>
+        </div>
         
         <div class="footer">
             資料僅用於訂餐服務，符合 LINE 隱私政策。
@@ -141,12 +293,15 @@
     </div>
 
     <script>
-        // 全域變數 - 最終強化版
+        // 全域變數
         const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **請務必更新為您的 LIFF ID**
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必更新為您的 GAS Web App URL**
+        
+        // DOM 元素
         const statusEl = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
         const phoneInput = document.getElementById('phone');
+        const phoneValidationEl = document.getElementById('phoneValidation');
 
         // 初始化 LIFF - 強化錯誤處理與重試邏輯
         async function initializeLiff() {
@@ -161,7 +316,9 @@
                     liff.login({ redirectUri: window.location.href });
                 } else {
                     // 檢查必要 scopes (profile)
-                    const profile = await liff.getProfile().catch(err => { throw new Error('無法取得 profile: ' + err.message); });
+                    const profile = await liff.getProfile().catch(err => { 
+                        throw new Error('無法取得 profile: ' + err.message); 
+                    });
                     updateStatus('已登入 LINE (' + profile.displayName + ')，準備綁定', 'info');
                     enableSubmitButton();
                 }
@@ -184,6 +341,12 @@
             }
         }
 
+        // 更新手機驗證訊息
+        function updatePhoneValidation(message, type) {
+            phoneValidationEl.textContent = message;
+            phoneValidationEl.className = 'validation-message ' + (type || '');
+        }
+
         // 啟用提交按鈕
         function enableSubmitButton() {
             submitBtn.disabled = false;
@@ -194,14 +357,25 @@
         function validatePhone(phone) {
             const regex = /^09\d{8}$/;
             const isValid = regex.test(phone);
+            
             phoneInput.classList.toggle('invalid', phone && !isValid);
+            
+            if (!phone) {
+                updatePhoneValidation('');
+            } else if (isValid) {
+                updatePhoneValidation('✓ 手機格式正確', 'success');
+            } else {
+                updatePhoneValidation('✗ 請輸入正確的手機格式 (09xxxxxxxx)', 'error');
+            }
+            
             return isValid;
         }
 
         // 輸入即時驗證
         function validateInput() {
             const phone = phoneInput.value.trim();
-            submitBtn.disabled = !validatePhone(phone) || !liff.isLoggedIn();
+            const isPhoneValid = validatePhone(phone);
+            submitBtn.disabled = !isPhoneValid || !liff.isLoggedIn();
         }
 
         // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
@@ -283,6 +457,20 @@
 
             // 手機輸入即時驗證
             phoneInput.addEventListener('input', validateInput);
+            
+            // 手機輸入框焦點事件
+            phoneInput.addEventListener('focus', function() {
+                if (this.value.trim() === '') {
+                    updatePhoneValidation('請輸入您的手機號碼');
+                }
+            });
+            
+            // 手機輸入框失去焦點事件
+            phoneInput.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    updatePhoneValidation('');
+                }
+            });
 
             // 可選: 取得 LIFF 其他資訊 (e.g., OS, language)
             if (liff.isInClient()) {
