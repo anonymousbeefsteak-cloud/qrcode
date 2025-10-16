@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 二維碼 - 無名牛排</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LINE 二維碼</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#00C300',
+                        primary: '#00C300', // LINE brand green
                         secondary: '#F5F5F5',
                         dark: '#333333'
                     },
@@ -24,156 +26,243 @@
             }
         }
     </script>
-    
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .qr-shadow {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            }
-        }
-    </style>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- React and Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-gray-50 font-sans text-dark">
-    <div class="min-h-screen flex flex-col">
-        <header class="bg-white shadow-sm">
-            <div class="container mx-auto px-4 py-6 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                        <i class="fa fa-comment text-white text-xl"></i>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- LIFF Service Logic ---
+        const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+        const LIFF_ID = '2008289130-9XPR8Kpj';
+
+        const initializeLiff = async () => {
+            try {
+                await window.liff.init({ liffId: LIFF_ID });
+                if (!window.liff.isLoggedIn()) {
+                    window.liff.login();
+                    return new Promise(() => {}); // Page redirects, so this promise never resolves
+                }
+                return await window.liff.getProfile();
+            } catch (error) {
+                console.error('LIFF initialization failed:', error);
+                throw new Error('無法初始化 LINE 服務，請稍後再試。');
+            }
+        };
+
+        const sendUserIdToBackend = async (userId) => {
+            if (GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.warn('Google Apps Script URL is not set. Skipping sending user ID. Please replace the placeholder.');
+                return;
+            }
+            try {
+                await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ userId }),
+                    mode: 'no-cors'
+                });
+                console.log('User ID submission process initiated.');
+            } catch (error) {
+                console.error('Failed to send user ID to backend:', error);
+            }
+        };
+
+        // --- Components ---
+
+        const Header = () => (
+            <header className="bg-white shadow-sm">
+                <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <i className="fa fa-comment text-white text-xl"></i>
+                        </div>
+                        <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
                     </div>
-                    <h1 class="text-xl md:text-2xl font-bold">無名牛排 LINE 二維碼</h1>
+                    <div>
+                        <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                            <i className="fa fa-share-alt mr-2"></i>分享
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center" onclick="shareLink()">
-                        <i class="fa fa-share-alt mr-2"></i>分享
-                    </button>
-                </div>
-            </div>
-        </header>
-        
-        <main class="flex-grow container mx-auto px-4 py-8 md:py-16">
-            <div class="max-w-3xl mx-auto">
-                <div class="text-center mb-10">
-                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入無名牛排</h2>
-                    <p class="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，添加好友並綁定會員</p>
-                </div>
-                
-                <div class="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
-                    <div class="relative mb-6">
-                        <img src="https://qr-official.line.me/sid/L/561zotgq.png" 
-                             alt="LINE二維碼" 
-                             class="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg">
-                        <div class="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
-                        <div class="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
-                        <div class="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
-                        <div class="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+            </header>
+        );
+
+        const QRCodeDisplay = ({ onCopy }) => {
+            const LINE_ID = '561zotgq';
+            const QR_CODE_URL = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
+
+            const copyToClipboard = (text) => {
+                navigator.clipboard.writeText(text).then(() => {
+                    onCopy();
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            };
+
+            return (
+                <div className="bg-white rounded-xl p-6 md:p-10 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),_0_8px_10px_-6px_rgba(0,0,0,0.05)] mb-10 flex flex-col items-center">
+                    <div className="relative mb-6">
+                        <img 
+                            src={QR_CODE_URL}
+                            alt="LINE二維碼" 
+                            className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
+                        />
+                        <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
                     </div>
                     
-                    <div class="text-center">
-                        <p class="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
-                        <div class="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
-                            <i class="fa fa-id-card text-primary mr-2"></i>
-                            <span>@561zotgq</span>
-                            <button class="ml-3 text-primary hover:text-primary/80 transition" onclick="copyToClipboard('@561zotgq')">
-                                <i class="fa fa-copy"></i>
+                    <div className="text-center">
+                        <p className="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
+                        <div className="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
+                            <i className="fa fa-id-card text-primary mr-2"></i>
+                            <span>{LINE_ID}</span>
+                            <button className="ml-3 text-primary hover:text-primary/80 transition" onClick={() => copyToClipboard(LINE_ID)}>
+                                <i className="fa fa-copy"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                
-                <div class="bg-white rounded-xl p-6 shadow-md">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fa fa-info-circle text-primary mr-2"></i>使用說明
-                    </h3>
-                    <ol class="space-y-4">
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
-                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
-                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
-                            <p>掃描成功後，添加好友並前往綁定會員頁面</p>
-                        </li>
-                    </ol>
+            );
+        };
+
+        const Instructions = () => (
+            <div className="bg-white rounded-xl p-6 shadow-md">
+                <h3 className="text-xl font-bold mb-4 flex items-center">
+                    <i className="fa fa-info-circle text-primary mr-2"></i>使用說明
+                </h3>
+                <ol className="space-y-4">
+                    <li className="flex items-start">
+                        <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                        <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                    </li>
+                    <li className="flex items-start">
+                        <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                        <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                    </li>
+                    <li className="flex items-start">
+                        <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                        <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
+                    </li>
+                </ol>
+            </div>
+        );
+
+        const Footer = () => (
+            <footer className="bg-dark text-white py-6">
+                <div className="container mx-auto px-4 text-center">
+                    <p className="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
+                    <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
                 </div>
-            </div>
-        </main>
-        
-        <footer class="bg-dark text-white py-6">
-            <div class="container mx-auto px-4 text-center">
-                <p class="mb-2">© 2025 無名牛排. 保留所有權利。</p>
-                <p class="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
-            </div>
-        </footer>
-    </div>
-    
-    <div id="copyToast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
-        已複製到剪貼簿
-    </div>
-    
-    <script>
-        // Configuration
-        const LIFF_ID = '2008289130-9XPR8Kpj';
-        const LIFF_URL = 'https://liff.line.me/2008289130-9XPR8Kpj';
+            </footer>
+        );
 
-        // Copy to clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const toast = document.getElementById('copyToast');
-                toast.classList.remove('opacity-0');
-                toast.classList.add('opacity-100');
+        const Toast = ({ isVisible, message }) => (
+            <div 
+                id="copyToast" 
+                className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'} pointer-events-none`}
+            >
+                {message}
+            </div>
+        );
+
+        // --- Main App Component ---
+        const App = () => {
+            const [isLoading, setIsLoading] = React.useState(true);
+            const [error, setError] = React.useState(null);
+            const [profile, setProfile] = React.useState(null);
+            const [isToastVisible, setIsToastVisible] = React.useState(false);
+
+            React.useEffect(() => {
+                const initLiffApp = async () => {
+                    try {
+                        // liff.ready ensures the SDK is loaded and ready before we try to call other liff APIs
+                        await liff.ready;
+                        const userProfile = await initializeLiff();
+                        if (userProfile) {
+                            setProfile(userProfile);
+                            await sendUserIdToBackend(userProfile.userId);
+                        }
+                    } catch (err) {
+                        setError(err.message || '發生未知錯誤');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                initLiffApp();
+            }, []);
+
+            const handleCopy = () => {
+                setIsToastVisible(true);
                 setTimeout(() => {
-                    toast.classList.remove('opacity-100');
-                    toast.classList.add('opacity-0');
+                    setIsToastVisible(false);
                 }, 3000);
-            });
-        }
+            };
 
-        // Share link
-        function shareLink() {
-            if (navigator.share) {
-                navigator.share({
-                    title: '無名牛排 LINE 二維碼',
-                    text: '掃描二維碼加入無名牛排，享受會員優惠！',
-                    url: LIFF_URL
-                }).catch(err => console.error('Share error:', err));
-            } else {
-                copyToClipboard(LIFF_URL);
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                        <div className="flex flex-col items-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p className="mt-4 text-lg text-gray-600">正在連接 LINE 服務...</p>
+                        </div>
+                    </div>
+                );
             }
-        }
-
-        // Initialize LIFF and redirect to binding page
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF initialized successfully');
-                if (liff.isLoggedIn()) {
-                    window.location.href = 'https://anonymousbeefsteak-cloud.github.io/qrcode/';
-                } else {
-                    liff.login({ redirectUri: LIFF_URL });
-                }
-            } catch (error) {
-                console.error('LIFF Init Error:', error.message, error.stack);
-                alert('無法初始化 LINE 服務，請在 LINE 應用程式內開啟。');
+            
+            if (error) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-red-50">
+                         <div className="text-center p-8 bg-white shadow-lg rounded-lg">
+                            <i className="fa fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <h2 className="text-2xl font-bold text-red-700 mb-2">發生錯誤</h2>
+                            <p className="text-gray-600">{error}</p>
+                        </div>
+                    </div>
+                );
             }
-        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.body.classList.add('opacity-100');
-            document.body.classList.remove('opacity-0');
-            initializeLiff();
-        });
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Header />
+                    <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">
+                                    掃描二維碼加入聯繫
+                                </h2>
+                                {profile && <p className="text-gray-700 text-xl">歡迎, {profile.displayName}!</p>}
+                                <p className="text-gray-600 text-lg mt-2">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                            </div>
+                            
+                            <QRCodeDisplay onCopy={handleCopy} />
+                            
+                            <Instructions />
+                        </div>
+                    </main>
+                    <Footer />
+                    <Toast isVisible={isToastVisible} message="已複製到剪貼簿" />
+                </div>
+            );
+        };
+
+        // --- Render the App ---
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
     </script>
 </body>
 </html>
