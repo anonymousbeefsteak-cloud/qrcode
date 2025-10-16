@@ -90,7 +90,7 @@
                 
                 if (!liff.isInClient()) {
                     showStatus('請在LINE內開啟', 'error');
-                    window.location.href = 'line://ti/p/@561zotgq'; // ← 你的 QR 碼 ID
+                    window.location.href = 'line://ti/p/@561zotgq'; // 確認與QR碼ID匹配
                     return;
                 }
 
@@ -102,12 +102,11 @@
                     pictureUrl: profile.pictureUrl || '',
                     statusMessage: liff.getDecodedIdToken()?.email || '',
                     timestamp: new Date().toISOString(),
-                    source: 'QR掃碼 @561zotgq', // ← 標記你的 QR 碼
+                    source: 'QR掃碼 @561zotgq',
                     botId: '561zotgq'
                 };
 
-                // 發送到你的 Google Sheets
-                await fetch('https://script.google.com/macros/s/AKfycbwSBOQguij32z-ioXCR-nlDpawyXj64bd1YjjvhcsUtLMrGCnjILVnNi6RMIz19ZRS0eQ/exec', {
+                await fetch('https://script.google.com/macros/s/AKfycbxfrYlDMYiERpd1FRGNvp8QACLfm1jbm0yKVUq3RKD-YQfPcWLvEXDH6eBtPIRbOiKPig/exec', {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
