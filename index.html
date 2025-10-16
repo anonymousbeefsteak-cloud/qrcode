@@ -7,7 +7,6 @@
     <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 強化樣式: 響應式設計、現代 UI, 品牌綠色、錯誤提示動畫 */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: #f4f4f4;
@@ -19,6 +18,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        body.loaded {
+            opacity: 1;
         }
         .container {
             max-width: 400px;
@@ -34,7 +38,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         h1 {
-            color: #00B900; /* LINE 綠 */
+            color: #00B900;
             font-size: 24px;
             margin-bottom: 10px;
         }
@@ -116,6 +120,7 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: 10px;
+            vertical-align: middle;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -123,7 +128,7 @@
         }
     </style>
 </head>
-<body>
+<body class="opacity-0">
     <div class="container">
         <h1>歡迎加入無名牛排</h1>
         <p>請填寫您的手機號碼進行綁定，方便訂餐與通知。我們將保護您的隱私。</p>
@@ -141,191 +146,197 @@
     </div>
 
     <script>
-        // 全域變數 - 最終強化版
-        const LIFF_ID = '2008289130-9XPR8Kpj';  // <-- **已更新為您提供的新 LIFF ID**
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';  // <-- **請務必確認您的 GAS Web App URL**
-        const BOT_CHANNEL_ID = '2008190577'; // <-- **請務必確認您的 Bot Channel ID**
+        // --- Configuration ---
+        const LIFF_ID = '2008289130-9XPR8Kpj';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzNF2-IPBKrqBHh1QwG5oFW8xnsmtHZu0uEYq1Tyfg80gIyDPkviuTUAzHXPsBqLuIy8A/exec';
+        const BOT_CHANNEL_ID = '2008190577';
 
+        // DOM Elements
         const statusEl = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
         const phoneInput = document.getElementById('phone');
 
-        // 初始化 LIFF - 強化錯誤處理與重試邏輯
+        /**
+         * Initialize LINE LIFF application
+         */
         async function initializeLiff() {
+            console.log('Starting LIFF initialization at:', new Date().toISOString());
             try {
-                updateStatus('正在初始化 LIFF...', 'info');
+                updateStatus('正在初始化 LINE 服務...', 'info');
                 await liff.init({ liffId: LIFF_ID });
-                updateStatus('LIFF 初始化成功', 'info');
-                
-                // 檢查登入狀態與 scopes
+                console.log('LIFF initialized successfully');
+                updateStatus('LINE 服務初始化成功', 'info');
+
                 if (!liff.isLoggedIn()) {
-                    updateStatus('未登入 LINE，正在跳轉登入...', 'info');
+                    console.log('User not logged in, redirecting to login');
+                    updateStatus('未登入 LINE，正在跳轉登入頁面...', 'info');
                     liff.login({ redirectUri: window.location.href });
-                } else {
-                    // 已登入，嘗試取得 profile
-                    try {
-                        const profile = await liff.getProfile();
-                        updateStatus('已登入 LINE (' + profile.displayName + ')，準備綁定', 'info');
-                        enableSubmitButton();
-                    } catch (profileError) {
-                        // 如果取得 profile 失敗，尤其可能是 token 過期
-                        console.error('取得 LINE Profile 失敗:', profileError);
-                        updateStatus('LINE 登入資訊過期或無法取得，正在重新登入...', 'info');
-                        // 嘗試重新登入以獲取新的 access token
-                        liff.login({ redirectUri: window.location.href });
-                    }
+                    return;
                 }
+
+                const profile = await liff.getProfile();
+                console.log('User profile:', {
+                    userId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl,
+                    statusMessage: profile.statusMessage
+                });
+                updateStatus(`已登入 LINE (${profile.displayName})，請填寫手機號碼`, 'info');
+                enableSubmitButton();
             } catch (error) {
-                updateStatus('LIFF 初始化失敗: ' + error.message + '。請刷新頁面重試。', 'error');
-                console.error('LIFF Init Error:', error);
-                // 可選: 自動重試一次
-                // setTimeout(initializeLiff, 3000);
+                console.error('LIFF Init Error:', error.message, error.stack);
+                updateStatus(`LINE 服務初始化失敗: ${error.message}。請檢查網路或 LIFF 設定。`, 'error');
+                if (!liff.isInClient()) {
+                    console.warn('This page is recommended to be opened in the LINE app for full functionality.');
+                }
             }
         }
 
-        // 更新狀態訊息 - 強化動畫與清除
+        /**
+         * Update status message
+         * @param {string} message - Message to display
+         * @param {'info'|'success'|'error'} type - Message type
+         */
         function updateStatus(message, type) {
-            statusEl.textContent = message; // Set text content first
-            statusEl.className = type;      // Then apply class
+            statusEl.textContent = message;
+            statusEl.className = type;
             if (type === 'info') {
-                statusEl.innerHTML = '<span class="loading"></span>' + message;
+                statusEl.innerHTML = `<span class="loading"></span>${message}`;
             } else {
                 statusEl.innerHTML = message;
             }
         }
 
-        // 啟用提交按鈕
+        /**
+         * Enable or disable submit button based on input and login status
+         */
         function enableSubmitButton() {
-            // Only enable if phone input is valid and user is logged in
-            validateInput(); 
+            validateInput();
         }
 
-        // 驗證手機格式 - 強化即時反饋
+        /**
+         * Validate phone number format
+         * @param {string} phone - Phone number to validate
+         * @returns {boolean} - True if valid
+         */
         function validatePhone(phone) {
-            const regex = /^09\d{8}$/; // 09開頭，後接8位數字
+            const regex = /^09\d{8}$/;
             const isValid = regex.test(phone);
-            phoneInput.classList.toggle('invalid', phone && !isValid); // Add invalid class if not empty and not valid
+            phoneInput.classList.toggle('invalid', phone && !isValid);
             return isValid;
         }
 
-        // 輸入即時驗證，決定按鈕狀態
+        /**
+         * Validate input and update button state
+         */
         function validateInput() {
             const phone = phoneInput.value.trim();
             const isPhoneValid = validatePhone(phone);
             const isLoggedIn = liff.isLoggedIn();
-            
-            submitBtn.disabled = !(isPhoneValid && isLoggedIn); // Only enable if both are true
+            submitBtn.disabled = !(isPhoneValid && isLoggedIn);
         }
 
-        // 提交綁定資料到 GAS - 最終強化: 詳細錯誤處理、timeout、no-cors 相容
+        /**
+         * Submit binding data to Google Apps Script
+         */
         async function submitBinding() {
             submitBtn.disabled = true;
-            updateStatus('處理中，請稍候...', 'info');
+            updateStatus('正在送出綁定請求，請稍候...', 'info');
 
             try {
-                // 取得 LINE Profile - 強化錯誤捕捉
-                const profile = await liff.getProfile().catch(err => {
-                    throw new Error('取得 LINE Profile 失敗: ' + err.message);
-                });
-
-                // 取得並驗證手機輸入
-                const phoneInputValue = phoneInput.value.trim();
-                if (!validatePhone(phoneInputValue)) {
-                    throw new Error('手機格式錯誤，請輸入 09 開頭的 10 位數字');
+                if (!liff.isLoggedIn()) {
+                    throw new Error('LINE 帳號未登入或登入資訊已過期，請重新嘗試登入。');
                 }
 
-                // 準備 POST 資料（匹配 GAS handleUserProfile 期望，強化 sanitize）
+                const profile = await liff.getProfile();
+                const phoneInputValue = phoneInput.value.trim();
+
+                if (!validatePhone(phoneInputValue)) {
+                    throw new Error('手機格式錯誤，請輸入 09 開頭的 10 位數字。');
+                }
+
                 const postData = {
-                    source: 'LIFF',
-                    customerLineId: profile.userId,
-                    customerName: profile.displayName || '', // Fallback to empty string if null
-                    customerPhone: phoneInputValue,
-                    pictureUrl: profile.pictureUrl || '',     // Fallback to empty string if null
-                    statusMessage: profile.statusMessage || '', // Fallback to empty string if null
-                    sourceType: 'LIFF_BINDING', // Clarify source type for your GAS
-                    botId: BOT_CHANNEL_ID       // 使用上方定義的 BOT_CHANNEL_ID
+                    data: [{
+                        timestamp: new Date().toISOString(),
+                        customerLineId: profile.userId || 'Unknown',
+                        customerName: profile.displayName || 'N/A',
+                        customerPhone: phoneInputValue,
+                        pictureUrl: profile.pictureUrl || '',
+                        statusMessage: profile.statusMessage || '',
+                        sourceType: 'LIFF_User_Binding',
+                        botId: BOT_CHANNEL_ID
+                    }]
                 };
 
-                // 發送 POST 到 GAS - 加 timeout 與錯誤捕捉
+                console.log('Sending POST to:', GAS_URL, 'Data:', JSON.stringify(postData, null, 2));
+
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => {
-                    controller.abort(); // Abort the fetch request if timeout
-                    updateStatus('網路請求超時，請檢查網路後重試。', 'error');
+                    controller.abort();
+                    updateStatus('綁定請求超時，請檢查網路後重試。', 'error');
                     enableSubmitButton();
-                }, 15000); // 15 秒 timeout
+                }, 15000);
 
-                await fetch(GAS_URL, {
+                const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',  // LIFF 內必須 (跨域提交到 GAS Web App)
-                    cache: 'no-cache',
-                    signal: controller.signal, // Connect the abort controller
                     headers: {
-                        'Content-Type': 'application/json' // Even with no-cors, this is good practice
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(postData)
+                    body: JSON.stringify(postData),
+                    redirect: 'follow',
+                    cache: 'no-store',
+                    signal: controller.signal
                 });
-                
-                clearTimeout(timeoutId); // Clear timeout if fetch completes
 
-                // 注意: no-cors 模式下無法讀取 response，但假設成功（GAS 會處理並寫入 Sheets）
-                updateStatus('綁定成功！視窗即將關閉', 'success');
-                console.log('Binding submitted successfully:', postData);
+                clearTimeout(timeoutId);
+                console.log('GAS response status:', response.status);
 
-                // 延遲關閉 LIFF 視窗
-                setTimeout(() => {
-                    if (liff.isInClient()) {
-                        liff.closeWindow();
-                    } else {
-                        // 如果不在 LINE 客戶端內，提供提示讓用戶手動關閉
-                        alert('綁定完成！您可以安全關閉此頁面。');
-                    }
-                }, 2000);
-
-            } catch (error) {
-                // Check if the error was due to an abort signal (timeout)
-                if (error.name === 'AbortError') {
-                    // The timeout message is already displayed by the timeoutId function
-                    console.warn('Fetch request was aborted (timeout).');
-                } else {
-                    updateStatus('綁定失敗: ' + error.message + '。請檢查網路或重試。', 'error');
-                    console.error('Submit Error:', error);
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('GAS response body:', JSON.stringify(result, null, 2));
+                } catch (e) {
+                    result = { status: 'success', message: 'No JSON response (assumed success)' };
+                    console.warn('Failed to parse GAS response:', e.message);
                 }
-                enableSubmitButton(); // 重新啟用按鈕
+
+                if (response.ok && result.status === 'success') {
+                    updateStatus('綁定成功！此頁面將自動關閉。', 'success');
+                    setTimeout(() => {
+                        if (liff.isInClient()) {
+                            console.log('Closing LIFF window');
+                            liff.closeWindow();
+                        } else {
+                            alert('綁定完成！您可以安全關閉此頁面。');
+                        }
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || `HTTP error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Submit Binding Error:', error.message, error.stack);
+                updateStatus(`綁定失敗: ${error.message}。請檢查資訊或重試。`, 'error');
+                enableSubmitButton();
             }
         }
 
-        // 事件綁定 - DOMContentLoaded
+        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            // 初始化 LIFF
+            console.log('Page loaded at:', new Date().toISOString());
+            document.body.classList.add('loaded');
             initializeLiff();
-
-            // 提交按鈕點擊
             submitBtn.addEventListener('click', submitBinding);
-
-            // 手機輸入即時驗證
             phoneInput.addEventListener('input', validateInput);
         });
 
-        // 監聽 LIFF 的 ready 事件，確保 LIFF SDK 完全載入並準備就緒
         liff.ready.then(() => {
-            console.log('LIFF SDK is ready.');
-            // This is a good place to do initial checks if needed,
-            // but initializeLiff() already handles most of it.
+            console.log('LIFF SDK fully loaded and ready.');
         }).catch((err) => {
-            console.error('LIFF SDK failed to initialize or prepare:', err);
-            updateStatus('LIFF SDK 載入失敗，請檢查網路或稍後重試。', 'error');
+            console.error('LIFF SDK load error:', err);
+            updateStatus('LINE 服務載入失敗，請檢查網路或稍後重試。', 'error');
         });
-
-        // 額外提示：如果LIFF在非LINE環境中打開
-        if (!liff.isInClient() && liff.ready) {
-             liff.ready.then(() => {
-                // Only show this warning if it's not a login redirect and not in LINE client
-                if (!liff.isLoggedIn()) { // Check if not logged in in case it's an external browser opening the LIFF URL
-                    console.warn('此頁面建議在 LINE 應用程式內開啟以獲得完整功能。');
-                    // updateStatus('請在 LINE 應用程式內開啟此頁面。', 'info');
-                }
-             });
-        }
     </script>
 </body>
 </html>
