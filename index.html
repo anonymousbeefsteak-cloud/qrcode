@@ -1,26 +1,71 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>L2O</title>
+    <title>L2O LIFF App - Add to Google Sheet</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f0f0f0; }
+        #status { margin-top: 20px; font-weight: bold; }
+        button { padding: 10px 20px; background-color: #00B900; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background-color: gray; }
+    </style>
 </head>
-<body style="text-align: center; padding: 20px;">
-    <h1>🎉 無名牛排 加好友成功！</h1>
-    <div id="status">👋 歡迎加入！</div>
+<body>
+    <h1>加入好友並記錄資訊</h1>
+    <p>此頁面必須透過 LINE App 掃描 QR Code 開啟，以確保 LIFF 在 LINE 環境中運作並取得用戶資料。</p>
+    <p>如果您已掃碼開啟，請點擊按鈕提交資料。</p>
+    <button id="submitBtn" onclick="sendToSheet()" disabled>提交資料</button>
+    <div id="status"></div>
 
     <script>
-        const LIFF_ID = '2008276630-bYNjwMx7';
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwGaufjpFizvjNjZnXRnOx01bNXUP6IG4697SAkeh06_qAfyVULZ1JdfFtlWVOxzo30gw/exec'; // ← 貼這裡
-
-        async function init() {
-            await liff.init({ liffId: LIFF_ID });
-            const profile = await liff.getProfile();
-            document.getElementById('status').innerHTML = `👋 ${profile.displayName}`;
-            window.location.href = BACKEND_URL;
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: '2008276630-bYNjwMx7' });
+                if (!liff.isLoggedIn()) {
+                    // 在 LINE App 內，自動視為登入；若未，強制登入
+                    liff.login({ redirectUri: window.location.href });
+                } else {
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('status').textContent = 'LIFF 初始化成功！您可以提交資料。';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'LIFF 初始化失敗: ' + error.message + '。請確保在 LINE App 內掃描 QR Code 開啟此頁面。';
+            }
         }
-        window.onload = init;
+
+        async function sendToSheet() {
+            if (!liff.isInClient()) {
+                document.getElementById('status').textContent = '錯誤: 請在 LINE App 內操作此功能。';
+                return;
+            }
+            document.getElementById('status').textContent = '正在取得資料...';
+            try {
+                const profile = await liff.getProfile();
+                const data = {
+                    userId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl,
+                    statusMessage: profile.statusMessage || ''
+                };
+
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwGaufjpFizvjNjZnXRnOx01bNXUP6IG4697SAkeh06_qAfyVULZ1JdfFtlWVOxzo30gw/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+
+                document.getElementById('status').textContent = '資料已成功傳送！感謝加入。';
+                // 可選: 傳送後自動關閉 LIFF
+                // liff.closeWindow();
+            } catch (error) {
+                document.getElementById('status').textContent = '錯誤: ' + error.message + '。請再試一次或檢查網路。';
+            }
+        }
+
+        window.onload = initializeLiff;
     </script>
 </body>
 </html>
