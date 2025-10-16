@@ -1,5 +1,5 @@
 {
-  "name": "LINE Friend Adder",
-  "description": "A simple page to encourage users to add a LINE Official Account, built with React and the LIFF SDK. It captures user profile information upon visit and records it in a Google Sheet.",
+  "name": "LINE ID to Google Sheet",
+  "description": "An application that scans a QR code to open a LINE Front-end Framework (LIFF) page, retrieves the user's LINE ID, and adds it to a Google Sheet via a Google Apps Script backend.",
   "requestFramePermissions": []
 }

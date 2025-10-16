@@ -1,294 +1,240 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
+<html lang="en">
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>無名牛排 - LINE 會員綁定</title>
+    <title>Add LINE Friend to Sheet</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- 使用穩定的 LIFF SDK 版本 -->
-    <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00C300',
-                        secondary: '#F5F5F5',
-                        dark: '#333333',
-                        steak: '#8B4513'
-                    },
-                    fontFamily: {
-                        sans: ['Noto Sans TC', 'sans-serif'],
-                    },
-                }
-            }
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://aistudiocdn.com/react@^19.2.0",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+          "react/": "https://aistudiocdn.com/react@^19.2.0/"
         }
+      }
     </script>
+    <!-- Add Babel for JSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #00C300 0%, #009900 100%);
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
         }
-        .steak-bg {
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+      }
     </style>
+  <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-gray-50 font-sans text-dark">
-    <div id="app">
-        <!-- 載入畫面 -->
-        <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-100">
-            <div class="text-center fade-in">
-                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">正在連接 LINE 服務</h2>
-                <p class="text-gray-500">請稍候...</p>
-            </div>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!-- Change script type to text/babel to enable in-browser JSX transpilation -->
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect, useCallback } from 'react';
+      import ReactDOM from 'react-dom/client';
+
+      // --- CONSTANTS ---
+      const LIFF_ID = '2008289130-9XPR8Kpj';
+      // IMPORTANT: Replace this with your actual Google Apps Script Web App URL.
+      // This URL is provided when you deploy your script as a web app.
+      const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec';
+
+      // --- COMPONENTS ---
+
+      const LoadingSpinner = () => (
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <svg
+            className="animate-spin h-12 w-12 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <p className="text-lg font-medium text-white">Connecting...</p>
         </div>
-    </div>
+      );
 
-    <script>
-        // 配置常數 - 使用您提供的正確 URL
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw30V3tWFaVMDCYPVLIpKLCC3vVUVGIUW2Nw0_LzswAzGNcoqFm3Iq3-JzWO9F9rH0pWw/exec';
-        const LIFF_ID = '2008289130-9XPR8Kpj';
+      const UserProfileCard = ({ profile }) => {
+        return (
+          <div className="flex flex-col items-center justify-center animate-fade-in">
+            <img
+              src={profile.pictureUrl || 'https://i.pravatar.cc/150'}
+              alt="LINE Profile"
+              className="w-24 h-24 rounded-full border-4 border-white shadow-lg mb-4"
+            />
+            <p className="text-xl font-semibold">{profile.displayName}</p>
+          </div>
+        );
+      };
+      
+      const CheckCircleIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
 
-        // 初始化 LIFF 應用
-        async function initializeLiff() {
+      const ExclamationCircleIcon = () => (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+      
+      const StatusMessage = ({ type, message }) => {
+        const isSuccess = type === 'success';
+        const bgColor = isSuccess ? 'bg-green-100/30' : 'bg-red-100/30';
+        const textColor = isSuccess ? 'text-green-100' : 'text-red-200';
+        const Icon = isSuccess ? CheckCircleIcon : ExclamationCircleIcon;
+
+        return (
+          <div className={`mt-6 p-4 rounded-lg flex items-center justify-center animate-fade-in ${bgColor} ${textColor}`}>
+            <Icon />
+            <span className="font-medium text-sm">{message}</span>
+          </div>
+        );
+      };
+
+
+      // --- MAIN APP COMPONENT ---
+
+      const App = () => {
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [profile, setProfile] = useState(null);
+        const [isAdded, setIsAdded] = useState(false);
+
+        const addUserToSheet = useCallback(async (userProfile) => {
+          if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('YOUR_DEPLOYMENT_ID_HERE')) {
+            setError("The Google Apps Script URL is not configured. Please contact the administrator.");
+            return;
+          }
+          try {
+            const { userId, displayName } = userProfile;
+            
+            // Using `fetch` with `mode: 'no-cors'` is a workaround. The request is sent,
+            // but the client-side code cannot read the response from Google Apps Script.
+            // For this to work, your Apps Script must be deployed to be accessible by "Anyone".
+            // You can also use a proper backend proxy to handle CORS and responses gracefully.
+            await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: JSON.stringify({ userId, displayName }),
+            });
+
+            // Since we can't read the response in 'no-cors' mode, we optimistically assume success.
+            console.log('Data sent to Google Sheet.');
+            setIsAdded(true);
+
+          } catch (err) {
+            console.error('Error sending data to Google Sheet:', err);
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+            setError(`Failed to add you to the list. Please try again later. Details: ${errorMessage}`);
+          }
+        }, []);
+
+        useEffect(() => {
+          const initializeLiff = async () => {
             try {
-                console.log('🚀 開始初始化 LIFF 應用...');
-                
-                // 初始化 LIFF
-                await liff.init({ liffId: LIFF_ID });
-                console.log('✅ LIFF SDK 初始化成功');
-                
-                // 檢查登入狀態
-                if (!liff.isLoggedIn()) {
-                    console.log('🔐 用戶未登入，執行登入...');
-                    liff.login({
-                        redirectUri: window.location.href
-                    });
-                    return;
-                }
-                
-                console.log('✅ 用戶已登入 LINE');
-                
-                // 取得用戶資料
-                console.log('👤 正在取得用戶資料...');
-                const profile = await liff.getProfile();
-                const context = liff.getContext();
-                
-                console.log('📋 用戶資料:', {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl,
-                    language: context.language
-                });
-                
-                // 顯示載入中的用戶介面
-                showUserLoading(profile.displayName);
-                
-                // 發送用戶資料到後端
-                await sendUserDataToBackend(profile, context);
-                
-            } catch (error) {
-                console.error('❌ LIFF 初始化失敗:', error);
-                showError('LINE 服務連接失敗', '請確保您在 LINE 應用程式中開啟此頁面，或稍後再試。');
+              console.log('Initializing LIFF...');
+              await liff.init({ liffId: LIFF_ID });
+
+              if (!liff.isLoggedIn()) {
+                console.log('User not logged in. Redirecting to login...');
+                liff.login();
+                return;
+              }
+
+              console.log('User is logged in. Getting profile...');
+              const userProfile = await liff.getProfile();
+              setProfile(userProfile);
+
+              console.log('Profile fetched:', userProfile);
+              await addUserToSheet(userProfile);
+
+            } catch (err) {
+              console.error('LIFF Initialization Error:', err);
+              const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+              setError(`Failed to initialize. Please make sure you are opening this in LINE. Details: ${errorMessage}`);
+            } finally {
+              setLoading(false);
             }
-        }
+          };
 
-        // 發送用戶資料到 Google Apps Script
-        async function sendUserDataToBackend(profile, context) {
-            try {
-                console.log('📤 開始發送用戶資料到後端...');
-                
-                const userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    statusMessage: profile.statusMessage || '',
-                    language: context.language || 'zh-TW',
-                    source: 'line_qr_code',
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('📦 準備發送的資料:', userData);
-                
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(userData)
-                });
-                
-                console.log('📨 收到後端回應，狀態:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('✅ 後端處理結果:', result);
-                
-                if (result.success) {
-                    showSuccess(profile, result.data);
-                } else {
-                    showError('資料處理失敗', result.message || '請稍後再試');
-                }
-                
-            } catch (error) {
-                console.error('❌ 發送用戶資料失敗:', error);
-                showError('網路連線問題', '無法連接伺服器，請檢查網路連線後重新整理頁面。');
-            }
-        }
-
-        // 顯示用戶載入中畫面
-        function showUserLoading(userName) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-100">
-                    <div class="text-center fade-in">
-                        <div class="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fa fa-user text-primary text-3xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">歡迎，${userName}！</h2>
-                        <p class="text-gray-600 mb-6">正在為您建立會員資料...</p>
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 顯示成功畫面
-        function showSuccess(profile, resultData) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-green-50 to-gray-100">
-                    <!-- 頁頭 -->
-                    <div class="gradient-bg text-white py-6 px-4 text-center">
-                        <div class="max-w-2xl mx-auto">
-                            <i class="fa fa-check-circle text-4xl mb-4"></i>
-                            <h1 class="text-3xl font-bold mb-2">加入成功！</h1>
-                            <p class="text-lg opacity-90">歡迎成為無名牛排會員</p>
-                        </div>
-                    </div>
-                    
-                    <!-- 主要內容 -->
-                    <div class="max-w-2xl mx-auto px-4 py-8">
-                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6 fade-in">
-                            <div class="text-center mb-6">
-                                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <i class="fa fa-user-check text-green-600 text-2xl"></i>
-                                </div>
-                                <h2 class="text-2xl font-bold text-gray-800 mb-2">${profile.displayName}</h2>
-                                <p class="text-gray-600">您已成功加入會員系統</p>
-                            </div>
-                            
-                            <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
-                                    <i class="fa fa-gift text-primary mr-2"></i>
-                                    會員專屬權益
-                                </h3>
-                                <div class="space-y-3">
-                                    <div class="flex items-center text-gray-700">
-                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
-                                        <span>新會員首次消費 9 折優惠</span>
-                                    </div>
-                                    <div class="flex items-center text-gray-700">
-                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
-                                        <span>專屬生日禮物與優惠</span>
-                                    </div>
-                                    <div class="flex items-center text-gray-700">
-                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
-                                        <span>最新促銷活動優先通知</span>
-                                    </div>
-                                    <div class="flex items-center text-gray-700">
-                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
-                                        <span>線上訂餐免排隊服務</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="text-center">
-                                <p class="text-sm text-gray-500 mb-4">
-                                    <i class="fa fa-clock mr-1"></i>
-                                    加入時間: ${new Date().toLocaleString('zh-TW')}
-                                </p>
-                                <button onclick="closeLiff()" class="steak-bg hover:opacity-90 text-white px-8 py-3 rounded-lg transition duration-300 font-semibold">
-                                    開始使用會員服務
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- 操作指引 -->
-                        <div class="bg-white rounded-2xl shadow-lg p-6 fade-in" style="animation-delay: 0.2s">
-                            <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
-                                <i class="fa fa-info-circle text-primary mr-2"></i>
-                                下一步操作指引
-                            </h3>
-                            <div class="space-y-3 text-sm text-gray-600">
-                                <p>• 點擊「開始使用會員服務」關閉此頁面</p>
-                                <p>• 您將收到 LINE 歡迎訊息</p>
-                                <p>• 未來可透過無名牛排官方帳號使用會員服務</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 顯示錯誤畫面
-        function showError(title, message) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-100">
-                    <div class="text-center fade-in max-w-md mx-4">
-                        <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fa fa-exclamation-triangle text-red-600 text-3xl"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-red-700 mb-4">${title}</h2>
-                        <p class="text-gray-600 mb-6 leading-relaxed">${message}</p>
-                        <div class="space-y-3">
-                            <button onclick="location.reload()" class="w-full bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition duration-300 font-semibold">
-                                <i class="fa fa-refresh mr-2"></i>重新嘗試
-                            </button>
-                            <button onclick="closeLiff()" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition duration-300">
-                                關閉頁面
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 關閉 LIFF 應用
-        function closeLiff() {
-            if (liff.isInClient()) {
-                liff.closeWindow();
-            } else {
-                window.close();
-            }
-        }
-
-        // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 頁面載入完成，開始初始化...');
+          // The liff object is loaded from the external script, so we wait for it to be available.
+          if (window.liff) {
             initializeLiff();
-        });
+          } else {
+             setError("LIFF SDK not found. Please check your internet connection and refresh the page.");
+             setLoading(false);
+          }
+        }, [addUserToSheet]);
 
-        // 錯誤處理
-        window.addEventListener('error', (event) => {
-            console.error('💥 全域錯誤:', event.error);
-        });
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-green-400 to-teal-600 flex flex-col items-center justify-center p-4 text-white font-sans">
+            <main className="w-full max-w-md mx-auto bg-white/20 backdrop-blur-lg rounded-2xl shadow-2xl p-8 text-center">
+              <h1 className="text-3xl font-bold mb-2">Welcome!</h1>
+              <p className="text-lg mb-6 text-gray-200">Thanks for connecting.</p>
+              
+              <div className="h-48 flex items-center justify-center">
+                {loading && <LoadingSpinner />}
+                {error && <StatusMessage type="error" message={error} />}
+                {!loading && !error && profile && (
+                  <div>
+                    <UserProfileCard profile={profile} />
+                    {isAdded ? (
+                      <StatusMessage type="success" message="You've been successfully added to our list!" />
+                    ) : (
+                      <p className="mt-4 text-yellow-300">Adding you to the list...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </main>
+            <footer className="mt-8 text-sm text-white/70">
+              <p>Powered by LIFF & Google Sheets</p>
+            </footer>
+          </div>
+        );
+      };
+
+      // --- RENDER APP ---
+
+      const rootElement = document.getElementById('root');
+      if (!rootElement) {
+        throw new Error("Could not find root element to mount to");
+      }
+
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
     </script>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
