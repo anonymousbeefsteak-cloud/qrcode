@@ -77,7 +77,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLFV3U2wdVT11r-IRRvxPKIerqgdUdmDFdW1gYqvTphPqvOdpGgkzUBCettOcPZGj8vg/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZq7EPKNVd35dh5m0DJZYf0U4QzU0VXhfzblaTKyLu8NF3x5olvL6RYiaGBM6ji-O1ig/exec';
 
         async function initializeApp() {
             try {
@@ -87,17 +87,22 @@
                 
                 if (!liff.isLoggedIn()) {
                     console.log('🔐 需要登入，重新導向...');
-                    liff.login();
+                    liff.login({ redirectUri: window.location.href });
                     return;
                 }
                 
                 console.log('✅ LIFF 初始化成功');
                 
-                // 獲取用戶資料
-                const profile = await liff.getProfile();
-                console.log('👤 獲取到用戶資料:', profile.displayName);
+                const profile = await liff.getProfile().catch(err => {
+                    console.error('❌ 無法獲取用戶資料:', err);
+                    return null;
+                });
                 
-                // 記錄用戶資料
+                if (!profile || !profile.userId || !profile.displayName) {
+                    console.error('❌ 用戶資料為空或缺少必要欄位');
+                    return;
+                }
+                
                 await recordUserData(profile);
                 
                 console.log('🎉 應用程式準備完成');
@@ -111,19 +116,25 @@
             return new Promise((resolve) => {
                 console.log('📝 開始記錄用戶資料...');
                 
-                // 構建參數 - 確保使用 encodeURIComponent
                 const params = {
-                    userId: encodeURIComponent(profile.userId),
-                    displayName: encodeURIComponent(profile.displayName),
+                    userId: encodeURIComponent(profile.userId || ''),
+                    displayName: encodeURIComponent(profile.displayName || ''),
                     pictureUrl: encodeURIComponent(profile.pictureUrl || ''),
                     timestamp: encodeURIComponent(new Date().toISOString())
                 };
                 
+                if (!params.userId || !params.displayName) {
+                    console.error('❌ 用戶資料無效或缺少必要欄位');
+                    resolve(false);
+                    return;
+                }
+                
                 console.log('📦 準備發送的參數:', params);
                 
-                // 方法1: 使用 Image 像素追蹤
                 const img = new Image();
-                const queryString = `userId=${params.userId}&displayName=${params.displayName}&pictureUrl=${params.pictureUrl}&timestamp=${params.timestamp}`;
+                const queryString = Object.keys(params)
+                    .map(key => `${key}=${params[key]}`)
+                    .join('&');
                 
                 console.log('🔗 完整請求 URL:', SCRIPT_URL + '?' + queryString);
                 
@@ -133,13 +144,11 @@
                 };
                 
                 img.onerror = function() {
-                    console.log('⚠️ 追蹤請求失敗');
+                    console.error('⚠️ 追蹤請求失敗');
                     resolve(false);
                 };
                 
-                // 發送請求
                 img.src = SCRIPT_URL + '?' + queryString;
-                
             });
         }
 
@@ -153,12 +162,10 @@
             }
         }
 
-        // 頁面載入
         window.addEventListener('load', function() {
             console.log('📄 頁面載入完成');
             initializeApp();
         });
-
     </script>
 </body>
 </html>
