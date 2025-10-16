@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE 二維碼</title>
+    <title>無名牛排 - LINE 會員綁定</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,8 @@
                     colors: {
                         primary: '#00C300',
                         secondary: '#F5F5F5',
-                        dark: '#333333'
+                        dark: '#333333',
+                        steak: '#8B4513'
                     },
                     fontFamily: {
                         sans: ['Noto Sans TC', 'sans-serif'],
@@ -27,66 +28,99 @@
             }
         }
     </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #00C300 0%, #009900 100%);
+        }
+        .steak-bg {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 font-sans text-dark">
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root">
-        <!-- 初始載入畫面 -->
-        <div class="min-h-screen flex items-center justify-center bg-gray-50">
-            <div class="flex flex-col items-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                <p class="text-lg text-gray-600">正在載入...</p>
+    <div id="app">
+        <!-- 載入畫面 -->
+        <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-100">
+            <div class="text-center fade-in">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">正在連接 LINE 服務</h2>
+                <p class="text-gray-500">請稍候...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 配置常數 ---
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyBhd-vbNlUjJbRZFqe4yRvHnBjQvSufO81QPUk-KXzZHlWtUSZAXiZ2fBPVWvajkOrg/exec';
+        // 配置常數 - 使用您提供的正確 URL
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqYjWamqJC81YFM-Ld2E-_SlG5K4pefpR2Qq5L0AY9bUpUKI1Edx5cOOGJlIVpCkTA9Q/exec';
         const LIFF_ID = '2008289130-9XPR8Kpj';
 
-        // --- LIFF 初始化函數 ---
+        // 初始化 LIFF 應用
         async function initializeLiff() {
             try {
-                console.log('開始初始化 LIFF...');
+                console.log('🚀 開始初始化 LIFF 應用...');
                 
                 // 初始化 LIFF
                 await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF 初始化成功');
+                console.log('✅ LIFF SDK 初始化成功');
                 
                 // 檢查登入狀態
                 if (!liff.isLoggedIn()) {
-                    console.log('用戶未登入，執行登入...');
-                    liff.login();
-                    return null; // 登入會重新導向，所以返回 null
+                    console.log('🔐 用戶未登入，執行登入...');
+                    liff.login({
+                        redirectUri: window.location.href
+                    });
+                    return;
                 }
                 
-                console.log('用戶已登入，取得用戶資料...');
-                // 取得用戶資料
-                const profile = await liff.getProfile();
-                console.log('用戶資料取得成功:', profile.displayName);
+                console.log('✅ 用戶已登入 LINE');
                 
-                return profile;
+                // 取得用戶資料
+                console.log('👤 正在取得用戶資料...');
+                const profile = await liff.getProfile();
+                const context = liff.getContext();
+                
+                console.log('📋 用戶資料:', {
+                    userId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl,
+                    language: context.language
+                });
+                
+                // 顯示載入中的用戶介面
+                showUserLoading(profile.displayName);
+                
+                // 發送用戶資料到後端
+                await sendUserDataToBackend(profile, context);
+                
             } catch (error) {
-                console.error('LIFF 初始化失敗:', error);
-                throw new Error('無法初始化 LINE 服務，請稍後再試。');
+                console.error('❌ LIFF 初始化失敗:', error);
+                showError('LINE 服務連接失敗', '請確保您在 LINE 應用程式中開啟此頁面，或稍後再試。');
             }
         }
 
-        // --- 發送用戶資料到後端 ---
-        async function sendUserDataToBackend(userId, displayName) {
-            if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
-                console.warn('Google Apps Script URL 未設定，跳過資料傳送');
-                return { success: true, simulated: true };
-            }
-            
+        // 發送用戶資料到 Google Apps Script
+        async function sendUserDataToBackend(profile, context) {
             try {
+                console.log('📤 開始發送用戶資料到後端...');
+                
                 const userData = {
-                    userId: userId,
-                    displayName: displayName,
-                    timestamp: new Date().toISOString(),
-                    source: 'line_qr_code'
+                    userId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl || '',
+                    statusMessage: profile.statusMessage || '',
+                    language: context.language || 'zh-TW',
+                    source: 'line_qr_code',
+                    timestamp: new Date().toISOString()
                 };
+                
+                console.log('📦 準備發送的資料:', userData);
                 
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
@@ -96,248 +130,164 @@
                     body: JSON.stringify(userData)
                 });
                 
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('後端回應:', result);
-                    return result;
-                } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                console.log('📨 收到後端回應，狀態:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
                 }
+                
+                const result = await response.json();
+                console.log('✅ 後端處理結果:', result);
+                
+                if (result.success) {
+                    showSuccess(profile, result.data);
+                } else {
+                    showError('資料處理失敗', result.message || '請稍後再試');
+                }
+                
             } catch (error) {
-                console.error('發送用戶資料失敗:', error);
-                // 不拋出錯誤，避免影響用戶體驗
-                return { success: false, error: error.message };
+                console.error('❌ 發送用戶資料失敗:', error);
+                showError('網路連線問題', '無法連接伺服器，請檢查網路連線後重新整理頁面。');
             }
         }
 
-        // --- 複製到剪貼簿功能 ---
-        function copyToClipboard(text) {
-            return new Promise((resolve, reject) => {
-                if (navigator.clipboard && window.isSecureContext) {
-                    navigator.clipboard.writeText(text).then(resolve).catch(reject);
-                } else {
-                    // 備用方案
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    textArea.style.position = 'fixed';
-                    textArea.style.opacity = '0';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        resolve();
-                    } catch (err) {
-                        reject(err);
-                    }
-                    document.body.removeChild(textArea);
-                }
-            });
+        // 顯示用戶載入中畫面
+        function showUserLoading(userName) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-gray-100">
+                    <div class="text-center fade-in">
+                        <div class="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fa fa-user text-primary text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">歡迎，${userName}！</h2>
+                        <p class="text-gray-600 mb-6">正在為您建立會員資料...</p>
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    </div>
+                </div>
+            `;
         }
 
-        // --- 顯示提示訊息 ---
-        function showToast(message, duration = 3000) {
-            // 移除現有的提示
-            const existingToast = document.getElementById('globalToast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            
-            const toast = document.createElement('div');
-            toast.id = 'globalToast';
-            toast.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 opacity-0';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            // 顯示動畫
-            setTimeout(() => {
-                toast.classList.remove('opacity-0');
-                toast.classList.add('opacity-100');
-            }, 100);
-            
-            // 自動隱藏
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }, duration);
-        }
-
-        // --- 主要應用邏輯 ---
-        async function initializeApp() {
-            const root = document.getElementById('root');
-            
-            try {
-                // 顯示載入狀態
-                root.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center bg-gray-50">
-                        <div class="flex flex-col items-center">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                            <p class="text-lg text-gray-600">正在連接 LINE 服務...</p>
+        // 顯示成功畫面
+        function showSuccess(profile, resultData) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="min-h-screen bg-gradient-to-br from-green-50 to-gray-100">
+                    <!-- 頁頭 -->
+                    <div class="gradient-bg text-white py-6 px-4 text-center">
+                        <div class="max-w-2xl mx-auto">
+                            <i class="fa fa-check-circle text-4xl mb-4"></i>
+                            <h1 class="text-3xl font-bold mb-2">加入成功！</h1>
+                            <p class="text-lg opacity-90">歡迎成為無名牛排會員</p>
                         </div>
                     </div>
-                `;
-                
-                // 初始化 LIFF 並取得用戶資料
-                const profile = await initializeLiff();
-                
-                if (profile) {
-                    // 發送資料到後端（不等待完成，避免阻塞）
-                    sendUserDataToBackend(profile.userId, profile.displayName)
-                        .then(result => {
-                            if (result && !result.success) {
-                                console.warn('後端資料儲存失敗:', result.error);
-                            }
-                        });
-                    
-                    // 顯示主要內容
-                    renderMainContent(root, profile);
-                }
-                // 如果 profile 為 null，表示正在登入流程中，頁面會重新導向
-                
-            } catch (error) {
-                console.error('應用初始化失敗:', error);
-                renderErrorPage(root, error.message);
-            }
-        }
-
-        // --- 渲染主要內容 ---
-        function renderMainContent(root, profile) {
-            const LINE_ID = '561zotgq';
-            const QR_CODE_URL = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
-            
-            root.innerHTML = `
-                <div class="min-h-screen flex flex-col">
-                    <!-- 頁頭 -->
-                    <header class="bg-white shadow-sm">
-                        <div class="container mx-auto px-4 py-6 flex justify-between items-center">
-                            <div class="flex items-center space-x-2">
-                                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                                    <i class="fa fa-comment text-white text-xl"></i>
-                                </div>
-                                <h1 class="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <span class="text-gray-600">歡迎，${profile.displayName}！</span>
-                                <button onclick="liff.logout(); window.location.reload();" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-300">
-                                    登出
-                                </button>
-                            </div>
-                        </div>
-                    </header>
                     
                     <!-- 主要內容 -->
-                    <main class="flex-grow container mx-auto px-4 py-8 md:py-16">
-                        <div class="max-w-3xl mx-auto">
-                            <!-- 標題區域 -->
-                            <div class="text-center mb-10">
-                                <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
-                                <p class="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                    <div class="max-w-2xl mx-auto px-4 py-8">
+                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6 fade-in">
+                            <div class="text-center mb-6">
+                                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fa fa-user-check text-green-600 text-2xl"></i>
+                                </div>
+                                <h2 class="text-2xl font-bold text-gray-800 mb-2">${profile.displayName}</h2>
+                                <p class="text-gray-600">您已成功加入會員系統</p>
                             </div>
                             
-                            <!-- QR碼區域 -->
-                            <div class="bg-white rounded-xl p-6 md:p-10 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.05)] mb-10 flex flex-col items-center">
-                                <div class="relative mb-6">
-                                    <img 
-                                        src="${QR_CODE_URL}"
-                                        alt="LINE二維碼" 
-                                        class="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
-                                    />
-                                    <div class="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
-                                    <div class="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
-                                    <div class="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
-                                    <div class="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
-                                </div>
-                                
-                                <div class="text-center">
-                                    <p class="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
-                                    <div class="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
-                                        <i class="fa fa-id-card text-primary mr-2"></i>
-                                        <span>${LINE_ID}</span>
-                                        <button class="ml-3 text-primary hover:text-primary/80 transition" onclick="handleCopy('${LINE_ID}')">
-                                            <i class="fa fa-copy"></i>
-                                        </button>
+                            <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i class="fa fa-gift text-primary mr-2"></i>
+                                    會員專屬權益
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center text-gray-700">
+                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
+                                        <span>新會員首次消費 9 折優惠</span>
+                                    </div>
+                                    <div class="flex items-center text-gray-700">
+                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
+                                        <span>專屬生日禮物與優惠</span>
+                                    </div>
+                                    <div class="flex items-center text-gray-700">
+                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
+                                        <span>最新促銷活動優先通知</span>
+                                    </div>
+                                    <div class="flex items-center text-gray-700">
+                                        <i class="fa fa-check-circle text-green-500 mr-3"></i>
+                                        <span>線上訂餐免排隊服務</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- 步驟說明 -->
-                            <div class="bg-white rounded-xl p-6 shadow-md">
-                                <h3 class="text-xl font-bold mb-4 flex items-center">
-                                    <i class="fa fa-info-circle text-primary mr-2"></i>使用說明
-                                </h3>
-                                <ol class="space-y-4">
-                                    <li class="flex items-start">
-                                        <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
-                                        <p>打開LINE應用程式，點擊右上角的「+」號</p>
-                                    </li>
-                                    <li class="flex items-start">
-                                        <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
-                                        <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
-                                    </li>
-                                    <li class="flex items-start">
-                                        <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
-                                        <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
-                                    </li>
-                                </ol>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-4">
+                                    <i class="fa fa-clock mr-1"></i>
+                                    加入時間: ${new Date().toLocaleString('zh-TW')}
+                                </p>
+                                <button onclick="closeLiff()" class="steak-bg hover:opacity-90 text-white px-8 py-3 rounded-lg transition duration-300 font-semibold">
+                                    開始使用會員服務
+                                </button>
                             </div>
                         </div>
-                    </main>
-                    
-                    <!-- 頁腳 -->
-                    <footer class="bg-dark text-white py-6">
-                        <div class="container mx-auto px-4 text-center">
-                            <p class="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
-                            <p class="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+                        
+                        <!-- 操作指引 -->
+                        <div class="bg-white rounded-2xl shadow-lg p-6 fade-in" style="animation-delay: 0.2s">
+                            <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fa fa-info-circle text-primary mr-2"></i>
+                                下一步操作指引
+                            </h3>
+                            <div class="space-y-3 text-sm text-gray-600">
+                                <p>• 點擊「開始使用會員服務」關閉此頁面</p>
+                                <p>• 您將收到 LINE 歡迎訊息</p>
+                                <p>• 未來可透過無名牛排官方帳號使用會員服務</p>
+                            </div>
                         </div>
-                    </footer>
-                </div>
-            `;
-        }
-
-        // --- 渲染錯誤頁面 ---
-        function renderErrorPage(root, errorMessage) {
-            root.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center bg-red-50">
-                    <div class="text-center p-8 bg-white shadow-lg rounded-lg max-w-md">
-                        <i class="fa fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-                        <h2 class="text-2xl font-bold text-red-700 mb-2">發生錯誤</h2>
-                        <p class="text-gray-600 mb-6">${errorMessage}</p>
-                        <button onclick="window.location.reload()" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg transition duration-300">
-                            重新載入
-                        </button>
                     </div>
                 </div>
             `;
         }
 
-        // --- 處理複製功能 ---
-        async function handleCopy(text) {
-            try {
-                await copyToClipboard(text);
-                showToast('已複製到剪貼簿');
-            } catch (error) {
-                console.error('複製失敗:', error);
-                showToast('複製失敗，請手動複製');
+        // 顯示錯誤畫面
+        function showError(title, message) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-100">
+                    <div class="text-center fade-in max-w-md mx-4">
+                        <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fa fa-exclamation-triangle text-red-600 text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-red-700 mb-4">${title}</h2>
+                        <p class="text-gray-600 mb-6 leading-relaxed">${message}</p>
+                        <div class="space-y-3">
+                            <button onclick="location.reload()" class="w-full bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition duration-300 font-semibold">
+                                <i class="fa fa-refresh mr-2"></i>重新嘗試
+                            </button>
+                            <button onclick="closeLiff()" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition duration-300">
+                                關閉頁面
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 關閉 LIFF 應用
+        function closeLiff() {
+            if (liff.isInClient()) {
+                liff.closeWindow();
+            } else {
+                window.close();
             }
         }
 
-        // --- 全局函數 ---
-        window.handleCopy = handleCopy;
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 頁面載入完成，開始初始化...');
+            initializeLiff();
+        });
 
-        // --- 應用啟動 ---
-        document.addEventListener('DOMContentLoaded', function() {
-            // 檢查是否在 LINE 環境中
-            if (navigator.userAgent.includes('Line')) {
-                initializeApp();
-            } else {
-                // 非 LINE 環境，顯示普通頁面
-                const root = document.getElementById('root');
-                renderMainContent(root, { displayName: '訪客' });
-            }
+        // 錯誤處理
+        window.addEventListener('error', (event) => {
+            console.error('💥 全域錯誤:', event.error);
         });
     </script>
 </body>
