@@ -3,220 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 加好友記錄</title>
+    <title>L2O</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans TC', Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            background-color: #f0f2f5; /* Light grey background */
-            color: #333;
-            line-height: 1.6;
-        }
-        h1 {
-            color: #00b900; /* LINE green */
-            margin-bottom: 15px;
-        }
-        p {
-            margin-bottom: 10px;
-        }
-        #status {
-            margin: 20px auto; /* Center status message */
-            padding: 12px;
-            border-radius: 8px;
-            max-width: 400px; /* Limit width for better readability */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            font-weight: bold;
-        }
-        .success {
-            background-color: #e6ffed; /* Lighter green */
-            color: #0a6b0a;
-            border: 1px solid #a6e7a6;
-        }
-        .error {
-            background-color: #ffebeb; /* Lighter red */
-            color: #a30000;
-            border: 1px solid #e7a6a6;
-        }
-        #profile {
-            margin: 20px auto;
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 300px; /* Limit profile box width */
-        }
-        #profile img {
-            border-radius: 50%; /* Make avatar round */
-            width: 80px; /* Adjust size */
-            height: 80px;
-            object-fit: cover; /* Ensure image covers the area */
-            margin-top: 10px;
-            border: 2px solid #00b900; /* LINE green border */
-        }
-        #profile p {
-            margin: 5px 0;
-            font-size: 1.1em;
-        }
-        button {
-            padding: 10px 25px;
-            font-size: 16px;
-            margin: 10px;
-            border: none;
-            border-radius: 25px; /* Rounded buttons */
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        button.primary {
-            background-color: #00b900; /* LINE green */
-            color: white;
-        }
-        button.primary:hover {
-            background-color: #009900;
-            transform: translateY(-2px);
-        }
-        button.secondary {
-            background-color: #f0f0f0;
-            color: #333;
-            border: 1px solid #ccc;
-        }
-        button.secondary:hover {
-            background-color: #e0e0e0;
-            transform: translateY(-2px);
-        }
-
-        /* Basic loading spinner placeholder */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #00b900;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none; /* Hidden by default */
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
 </head>
-<body>
-    <h1>歡迎！掃碼加入好友</h1>
-    <p>正在處理您的資料，請稍候...</p>
-    <div class="loader" id="loader"></div>
-    <div id="profile"></div>
-    <div id="status"></div>
-    <button id="closeButton" class="primary" style="display:none;">關閉頁面</button>
+<body style="font-family: Arial; text-align: center; padding: 20px; background: #fff;">
+    <h1>🔄 載入中...</h1>
+    <div id="status">初始化...</div>
+    <div id="debug"></div>
 
     <script>
-        // !! IMPORTANT !! Replace with your actual LIFF ID and GAS URL
         const LIFF_ID = '2008276630-bYNjwMx7';
         const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxfrYlDMYiERpd1FRGNvp8QACLfm1jbm0yKVUq3RKD-YQfPcWLvEXDH6eBtPIRbOiKPig/exec';
 
-        const profileDiv = document.getElementById('profile');
-        const statusDiv = document.getElementById('status');
-        const loader = document.getElementById('loader');
-        const closeButton = document.getElementById('closeButton');
-
-        closeButton.addEventListener('click', () => {
-            if (liff.isInClient()) {
-                liff.closeWindow();
-            } else {
-                alert('您不在LINE應用程式內，無法關閉視窗。');
-                console.log('User is not in LINE client, cannot close window.');
-            }
-        });
-
-        function showLoader(show) {
-            loader.style.display = show ? 'block' : 'none';
+        function log(msg) {
+            document.getElementById('debug').innerHTML += `<p>${msg}</p>`;
+            console.log(msg);
         }
 
-        function showStatus(message, type) {
-            statusDiv.textContent = message;
-            statusDiv.className = type;
-            statusDiv.style.display = 'block'; // Ensure status is visible
-        }
-
-        async function initializeLiff() {
-            showLoader(true); // Show loader when starting
+        async function init() {
+            log('1. 開始 LIFF 初始化');
+            document.getElementById('status').innerHTML = '1. 初始化 LIFF...';
+            
             try {
                 await liff.init({ liffId: LIFF_ID });
-
+                log('✅ LIFF 初始化成功');
+                document.getElementById('status').innerHTML = '✅ LIFF OK';
+                
                 if (!liff.isLoggedIn()) {
-                    // Redirect to LIFF login page if not logged in
+                    log('2. 需要登入');
+                    document.getElementById('status').innerHTML = '2. 登入中...';
                     liff.login();
-                    return; // Stop execution after redirect
-                }
-
-                // Check if user has granted profile scope
-                const accessToken = liff.getAccessToken();
-                if (!accessToken) {
-                    showStatus('無法取得用戶資料，請確保已授權。', 'error');
-                    showLoader(false);
                     return;
                 }
-
+                
+                log('3. 已登入');
+                document.getElementById('status').innerHTML = '3. 取得資料...';
+                
                 const profile = await liff.getProfile();
-                profileDiv.innerHTML = `
-                    <p>姓名: ${profile.displayName}</p>
-                    <img src="${profile.pictureUrl}" alt="用戶頭像">
-                `;
-                profileDiv.style.display = 'block'; // Show profile
-
-                await sendToBackend(profile);
-
-            } catch (error) {
-                console.error("LIFF initialization or profile retrieval error:", error);
-                showStatus('發生錯誤: ' + error.message, 'error');
-            } finally {
-                showLoader(false); // Hide loader after process
-                closeButton.style.display = 'block'; // Always show close button at the end
-            }
-        }
-
-        async function sendToBackend(profile) {
-            try {
-                const response = await fetch(BACKEND_URL, {
+                log(`👤 用戶: ${profile.displayName} (${profile.userId})`);
+                
+                document.getElementById('status').innerHTML = `👋 ${profile.displayName}`;
+                
+                // 傳送到後端
+                log('4. 傳送資料...');
+                const res = await fetch(BACKEND_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: profile.userId,
-                        displayName: profile.displayName,
-                        pictureUrl: profile.pictureUrl
-                        // Add more profile data if needed, e.g., statusMessage: profile.statusMessage
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(profile)
                 });
-
-                if (!response.ok) {
-                    // Handle HTTP errors, e.g., 404, 500
-                    const errorText = await response.text();
-                    throw new Error(`伺服器錯誤: ${response.status} - ${errorText}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showStatus(result.message || '資料已成功記錄！', 'success');
-                } else {
-                    // Backend specifically returned success: false
-                    showStatus(result.message || '資料記錄失敗，請重試。', 'error');
-                }
+                const result = await res.json();
+                log(`✅ 後端: ${result.message}`);
+                
+                document.getElementById('status').innerHTML = '🎉 加入成功！';
+                
             } catch (error) {
-                console.error("Sending data to backend failed:", error);
-                showStatus('傳送資料至伺服器失敗: ' + error.message, 'error');
+                log(`❌ 錯誤: ${error}`);
+                document.getElementById('status').innerHTML = `❌ ${error.message}`;
             }
         }
 
-        // Initialize LIFF when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', initializeLiff);
+        // 立即執行
+        window.onload = init;
     </script>
 </body>
 </html>
