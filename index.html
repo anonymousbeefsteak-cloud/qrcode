@@ -3,315 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無名牛排 - 加入好友</title>
-    <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+    <title>LINE 加好友記錄</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-        }
-        
         body {
-            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background-color: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 500px;
-            overflow: hidden;
+            font-family: 'Noto Sans TC', Arial, sans-serif;
             text-align: center;
+            padding: 20px;
+            background-color: #f0f2f5; /* Light grey background */
+            color: #333;
+            line-height: 1.6;
         }
-        
-        .header {
-            background-color: #06C755;
-            color: white;
-            padding: 30px 20px;
-        }
-        
-        .logo {
-            width: 80px;
-            height: 80px;
-            background-color: white;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 40px;
-            color: #06C755;
-        }
-        
         h1 {
-            font-size: 24px;
+            color: #00b900; /* LINE green */
+            margin-bottom: 15px;
+        }
+        p {
             margin-bottom: 10px;
         }
-        
-        .content {
-            padding: 30px 20px;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-        }
-        
-        .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            margin-right: 15px;
-            background-color: #e9ecef;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-        
-        .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .user-details {
-            text-align: left;
-        }
-        
-        .user-name {
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        
-        .user-id {
-            font-size: 12px;
-            color: #6c757d;
-        }
-        
-        .status {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 10px;
+        #status {
+            margin: 20px auto; /* Center status message */
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 400px; /* Limit width for better readability */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             font-weight: bold;
         }
-        
         .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background-color: #e6ffed; /* Lighter green */
+            color: #0a6b0a;
+            border: 1px solid #a6e7a6;
         }
-        
         .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background-color: #ffebeb; /* Lighter red */
+            color: #a30000;
+            border: 1px solid #e7a6a6;
         }
-        
-        .loading {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+        #profile {
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 300px; /* Limit profile box width */
         }
-        
-        .btn {
-            background-color: #06C755;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
+        #profile img {
+            border-radius: 50%; /* Make avatar round */
+            width: 80px; /* Adjust size */
+            height: 80px;
+            object-fit: cover; /* Ensure image covers the area */
             margin-top: 10px;
+            border: 2px solid #00b900; /* LINE green border */
         }
-        
-        .btn:hover {
-            background-color: #05a344;
+        #profile p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 16px;
+            margin: 10px;
+            border: none;
+            border-radius: 25px; /* Rounded buttons */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button.primary {
+            background-color: #00b900; /* LINE green */
+            color: white;
+        }
+        button.primary:hover {
+            background-color: #009900;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
-        .btn:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        button.secondary {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
         }
-        
-        .footer {
-            padding: 20px;
-            background-color: #f8f9fa;
-            color: #6c757d;
-            font-size: 12px;
+        button.secondary:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
         }
-        
-        .hidden {
-            display: none;
+
+        /* Basic loading spinner placeholder */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #00b900;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🥩</div>
-            <h1>無名牛排</h1>
-            <p>感謝您加入好友</p>
-        </div>
-        
-        <div class="content">
-            <div id="userInfo" class="user-info hidden">
-                <div class="avatar">
-                    <img id="userAvatar" src="" alt="用戶頭像">
-                </div>
-                <div class="user-details">
-                    <div class="user-name" id="userName"></div>
-                    <div class="user-id" id="userId"></div>
-                </div>
-            </div>
-            
-            <div id="statusMessage" class="status hidden"></div>
-            
-            <button id="submitBtn" class="btn">記錄到會員資料庫</button>
-            <button id="shareBtn" class="btn" style="background-color: #007bff;">分享給朋友</button>
-        </div>
-        
-        <div class="footer">
-            <p>© 2023 無名牛排 版權所有</p>
-        </div>
-    </div>
+    <h1>歡迎！掃碼加入好友</h1>
+    <p>正在處理您的資料，請稍候...</p>
+    <div class="loader" id="loader"></div>
+    <div id="profile"></div>
+    <div id="status"></div>
+    <button id="closeButton" class="primary" style="display:none;">關閉頁面</button>
 
     <script>
-        // LIFF 初始化
+        // !! IMPORTANT !! Replace with your actual LIFF ID and GAS URL
+        const LIFF_ID = '2008276630-bYNjwMx7';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxfrYlDMYiERpd1FRGNvp8QACLfm1jbm0yKVUq3RKD-YQfPcWLvEXDH6eBtPIRbOiKPig/exec';
+
+        const profileDiv = document.getElementById('profile');
+        const statusDiv = document.getElementById('status');
+        const loader = document.getElementById('loader');
+        const closeButton = document.getElementById('closeButton');
+
+        closeButton.addEventListener('click', () => {
+            if (liff.isInClient()) {
+                liff.closeWindow();
+            } else {
+                alert('您不在LINE應用程式內，無法關閉視窗。');
+                console.log('User is not in LINE client, cannot close window.');
+            }
+        });
+
+        function showLoader(show) {
+            loader.style.display = show ? 'block' : 'none';
+        }
+
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block'; // Ensure status is visible
+        }
+
         async function initializeLiff() {
+            showLoader(true); // Show loader when starting
             try {
-                await liff.init({ liffId: "2008276630-bYNjwMx7" });
-                
+                await liff.init({ liffId: LIFF_ID });
+
                 if (!liff.isLoggedIn()) {
+                    // Redirect to LIFF login page if not logged in
                     liff.login();
+                    return; // Stop execution after redirect
+                }
+
+                // Check if user has granted profile scope
+                const accessToken = liff.getAccessToken();
+                if (!accessToken) {
+                    showStatus('無法取得用戶資料，請確保已授權。', 'error');
+                    showLoader(false);
                     return;
                 }
-                
+
                 const profile = await liff.getProfile();
-                displayUserInfo(profile);
-                
+                profileDiv.innerHTML = `
+                    <p>姓名: ${profile.displayName}</p>
+                    <img src="${profile.pictureUrl}" alt="用戶頭像">
+                `;
+                profileDiv.style.display = 'block'; // Show profile
+
+                await sendToBackend(profile);
+
             } catch (error) {
-                console.error('LIFF 初始化失敗:', error);
-                showStatus('LIFF 初始化失敗，請稍後再試', 'error');
+                console.error("LIFF initialization or profile retrieval error:", error);
+                showStatus('發生錯誤: ' + error.message, 'error');
+            } finally {
+                showLoader(false); // Hide loader after process
+                closeButton.style.display = 'block'; // Always show close button at the end
             }
         }
-        
-        // 顯示用戶資訊
-        function displayUserInfo(profile) {
-            document.getElementById('userInfo').classList.remove('hidden');
-            document.getElementById('userName').textContent = profile.displayName;
-            document.getElementById('userId').textContent = `ID: ${profile.userId}`;
-            
-            if (profile.pictureUrl) {
-                document.getElementById('userAvatar').src = profile.pictureUrl;
-            } else {
-                document.getElementById('userAvatar').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23e9ecef'/%3E%3Ctext x='30' y='40' text-anchor='middle' fill='%236c757d' font-size='24'%3E👤%3C/text%3E%3C/svg%3E";
-            }
-        }
-        
-        // 顯示狀態訊息
-        function showStatus(message, type) {
-            const statusElement = document.getElementById('statusMessage');
-            statusElement.textContent = message;
-            statusElement.className = `status ${type}`;
-            statusElement.classList.remove('hidden');
-        }
-        
-        // 提交用戶資料到 Google Sheets
-        async function submitUserData(profile) {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '處理中...';
-            
-            showStatus('正在記錄您的資料...', 'loading');
-            
+
+        async function sendToBackend(profile) {
             try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbxfrYlDMYiERpd1FRGNvp8QACLfm1jbm0yKVUq3RKD-YQfPcWLvEXDH6eBtPIRbOiKPig/exec', {
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         userId: profile.userId,
                         displayName: profile.displayName,
-                        pictureUrl: profile.pictureUrl || '',
-                        timestamp: new Date().toISOString()
+                        pictureUrl: profile.pictureUrl
+                        // Add more profile data if needed, e.g., statusMessage: profile.statusMessage
                     })
                 });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('成功記錄到會員資料庫！', 'success');
-                    submitBtn.textContent = '已記錄';
-                } else {
-                    showStatus('記錄失敗，請稍後再試', 'error');
-                    submitBtn.textContent = '記錄到會員資料庫';
-                    submitBtn.disabled = false;
+
+                if (!response.ok) {
+                    // Handle HTTP errors, e.g., 404, 500
+                    const errorText = await response.text();
+                    throw new Error(`伺服器錯誤: ${response.status} - ${errorText}`);
                 }
-                
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(result.message || '資料已成功記錄！', 'success');
+                } else {
+                    // Backend specifically returned success: false
+                    showStatus(result.message || '資料記錄失敗，請重試。', 'error');
+                }
             } catch (error) {
-                console.error('提交資料失敗:', error);
-                showStatus('網路錯誤，請稍後再試', 'error');
-                submitBtn.textContent = '記錄到會員資料庫';
-                submitBtn.disabled = false;
+                console.error("Sending data to backend failed:", error);
+                showStatus('傳送資料至伺服器失敗: ' + error.message, 'error');
             }
         }
-        
-        // 分享功能
-        function shareToFriends() {
-            if (liff.isApiAvailable('shareTargetPicker')) {
-                liff.shareTargetPicker([
-                    {
-                        type: 'text',
-                        text: '快來加入無名牛排的 LINE 好友，獲取最新優惠資訊！'
-                    }
-                ])
-                .then(() => {
-                    showStatus('已分享給朋友！', 'success');
-                })
-                .catch((error) => {
-                    console.error('分享失敗:', error);
-                    showStatus('分享失敗，請稍後再試', 'error');
-                });
-            } else {
-                showStatus('您的裝置不支援分享功能', 'error');
-            }
-        }
-        
-        // 頁面載入完成後初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeLiff();
-            
-            // 綁定按鈕事件
-            document.getElementById('submitBtn').addEventListener('click', async () => {
-                const profile = await liff.getProfile();
-                submitUserData(profile);
-            });
-            
-            document.getElementById('shareBtn').addEventListener('click', shareToFriends);
-        });
+
+        // Initialize LIFF when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', initializeLiff);
     </script>
 </body>
 </html>
