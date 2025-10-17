@@ -2,71 +2,65 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>無名牛排 - QR Code 會員綁定</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>無名牛排 - 會員綁定引導</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
             background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-            color: #333;
+            color: white;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            text-align: center;
         }
         
         .container {
             background: white;
-            border-radius: 20px;
+            color: #333;
             padding: 30px;
+            border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            text-align: center;
             max-width: 400px;
-            width: 100%;
         }
         
         .logo {
-            font-size: 3em;
+            font-size: 4em;
             margin-bottom: 10px;
         }
         
         h1 {
             color: #8B4513;
             margin-bottom: 20px;
-            font-size: 1.5em;
         }
         
-        .status-box {
+        .steps {
+            text-align: left;
             background: #f8f9fa;
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 10px;
             margin: 20px 0;
-            border-left: 5px solid #8B4513;
         }
         
-        .avatar {
-            width: 80px;
-            height: 80px;
+        .step {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            background: #8B4513;
+            color: white;
+            width: 25px;
+            height: 25px;
             border-radius: 50%;
-            object-fit: cover;
-            margin: 15px auto;
-            border: 3px solid #8B4513;
-            display: none;
-        }
-        
-        .user-name {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin: 10px 0;
-            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            flex-shrink: 0;
         }
         
         .btn {
@@ -77,69 +71,13 @@
             border-radius: 10px;
             font-size: 1.1em;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
             margin: 10px 5px;
-            width: 100%;
-            max-width: 200px;
-            transition: all 0.3s;
         }
         
         .btn:hover {
             background: #A0522D;
-            transform: translateY(-2px);
-        }
-        
-        .btn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .btn-retry {
-            background: #28a745;
-        }
-        
-        .success { color: #28a745; }
-        .error { color: #dc3545; }
-        .loading { color: #007bff; }
-        
-        .step {
-            display: none;
-        }
-        
-        .step.active {
-            display: block;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #8B4513;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 手機優化 */
-        @media (max-width: 480px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            h1 {
-                font-size: 1.3em;
-            }
-            
-            .btn {
-                padding: 12px 25px;
-                font-size: 1em;
-            }
         }
     </style>
 </head>
@@ -148,215 +86,29 @@
         <div class="logo">🥩</div>
         <h1>無名牛排 - 會員綁定</h1>
         
-        <!-- 步驟1: 載入中 -->
-        <div id="step-loading" class="step active">
-            <div class="status-box">
-                <div class="spinner"></div>
-                <p>正在初始化...</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>請確保您正在使用 LINE App</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>點擊下方按鈕在 LINE 中開啟綁定頁面</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>系統將自動完成會員綁定</div>
             </div>
         </div>
         
-        <!-- 步驟2: 用戶資訊 -->
-        <div id="step-user" class="step">
-            <img id="avatar" class="avatar" src="" alt="用戶頭像">
-            <div class="user-name" id="userName"></div>
-            <div class="status-box">
-                <p id="userStatus">準備綁定會員資料...</p>
-            </div>
-        </div>
+        <a href="https://line.me/R/app/2008289130-9XPR8Kpj" class="btn">
+            在 LINE 中開啟綁定頁面
+        </a>
         
-        <!-- 步驟3: 結果 -->
-        <div id="step-result" class="step">
-            <div class="status-box" id="resultBox">
-                <!-- 結果訊息顯示在這裡 -->
-            </div>
-        </div>
-        
-        <!-- 按鈕區域 -->
-        <div class="buttons">
-            <button id="btnClose" class="btn" onclick="closeApp()" style="display: none;">關閉</button>
-            <button id="btnRetry" class="btn btn-retry" onclick="retry()" style="display: none;">重試</button>
-        </div>
+        <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
+            如果按鈕無法點擊，請複製以下網址在 LINE 中開啟：<br>
+            <code>https://line.me/R/app/2008289130-9XPR8Kpj</code>
+        </p>
     </div>
-
-    <script>
-        // 配置
-        const LIFF_ID = "2008289130-9XPR8Kpj";
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzqz4S0thSUZ9zY1PO8K_BMTvZde-MJfCSVsNEWR3tnT-x55CZj38VtqWcl4GOuv62pQ/exec";
-        
-        // 狀態管理
-        let currentStep = 'loading';
-        
-        // 初始化
-        async function initialize() {
-            try {
-                showStep('loading');
-                
-                // 初始化 LIFF
-                await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF 初始化成功');
-                
-                // 檢查登入狀態
-                if (!liff.isLoggedIn()) {
-                    console.log('需要登入，執行登入...');
-                    liff.login();
-                    return;
-                }
-                
-                // 獲取用戶資料
-                const profile = await liff.getProfile();
-                console.log('獲取用戶資料成功:', profile.userId);
-                
-                // 顯示用戶資訊
-                showUserInfo(profile);
-                
-                // 發送綁定請求
-                await bindUser(profile);
-                
-            } catch (error) {
-                console.error('初始化錯誤:', error);
-                showError('系統錯誤: ' + error.message);
-            }
-        }
-        
-        // 顯示用戶資訊
-        function showUserInfo(profile) {
-            document.getElementById('userName').textContent = profile.displayName;
-            
-            if (profile.pictureUrl) {
-                document.getElementById('avatar').src = profile.pictureUrl;
-                document.getElementById('avatar').style.display = 'block';
-            }
-            
-            showStep('user');
-            document.getElementById('userStatus').textContent = '正在綁定會員資料...';
-        }
-        
-        // 綁定用戶
-        async function bindUser(profile) {
-            try {
-                // 準備資料
-                const userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    statusMessage: profile.statusMessage || '',
-                    source: 'qr_code',
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('發送綁定請求:', userData);
-                
-                // 發送請求到 Google Apps Script
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(userData)
-                });
-                
-                console.log('收到回應，狀態碼:', response.status);
-                
-                // 解析回應
-                let result;
-                try {
-                    result = await response.json();
-                    console.log('回應資料:', result);
-                } catch (parseError) {
-                    console.error('解析回應失敗:', parseError);
-                    throw new Error('伺服器回應格式錯誤');
-                }
-                
-                // 處理回應
-                if (response.ok) {
-                    if (result.status === 'success' || result.success) {
-                        showSuccess(result.message || '會員綁定成功！');
-                    } else {
-                        throw new Error(result.message || '綁定失敗');
-                    }
-                } else {
-                    throw new Error(`伺服器錯誤: ${response.status}`);
-                }
-                
-            } catch (error) {
-                console.error('綁定錯誤:', error);
-                showError('綁定失敗: ' + error.message);
-            }
-        }
-        
-        // 顯示步驟
-        function showStep(step) {
-            // 隱藏所有步驟
-            document.querySelectorAll('.step').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // 顯示指定步驟
-            document.getElementById(`step-${step}`).classList.add('active');
-            currentStep = step;
-        }
-        
-        // 顯示成功
-        function showSuccess(message) {
-            showStep('result');
-            document.getElementById('resultBox').innerHTML = `
-                <div style="color: #28a745; font-size: 1.2em;">
-                    <div style="font-size: 2em; margin-bottom: 10px;">✅</div>
-                    <div>${message}</div>
-                </div>
-            `;
-            document.getElementById('userStatus').textContent = '綁定完成';
-            document.getElementById('btnClose').style.display = 'inline-block';
-        }
-        
-        // 顯示錯誤
-        function showError(message) {
-            showStep('result');
-            document.getElementById('resultBox').innerHTML = `
-                <div style="color: #dc3545; font-size: 1.1em;">
-                    <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
-                    <div>${message}</div>
-                </div>
-            `;
-            document.getElementById('userStatus').textContent = '綁定失敗';
-            document.getElementById('btnClose').style.display = 'inline-block';
-            document.getElementById('btnRetry').style.display = 'inline-block';
-        }
-        
-        // 關閉應用
-        function closeApp() {
-            if (liff.isInClient()) {
-                liff.closeWindow();
-            } else {
-                alert('您可以在 LINE 中關閉此視窗');
-            }
-        }
-        
-        // 重試
-        function retry() {
-            location.reload();
-        }
-        
-        // 頁面載入時啟動
-        window.addEventListener('load', function() {
-            // 檢查是否在 LINE 環境中
-            const isInLine = navigator.userAgent.includes('Line') || 
-                           (window.liff && liff.isInClient());
-            
-            if (!isInLine) {
-                showError('請在 LINE App 中掃描 QR Code 開啟此頁面');
-                return;
-            }
-            
-            initialize();
-        });
-        
-        // 錯誤處理
-        window.addEventListener('error', function(event) {
-            console.error('全局錯誤:', event.error);
-            showError('發生未知錯誤，請重試');
-        });
-    </script>
 </body>
 </html>
