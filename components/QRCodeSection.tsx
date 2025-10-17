@@ -1,23 +1,13 @@
-
 import React from 'react';
 
 interface QRCodeSectionProps {
     onCopy: () => void;
     bindingStatus: 'idle' | 'syncing' | 'success' | 'error';
-    userName: string;
-    userId: string;
 }
 
-const QRCodeSection: React.FC<QRCodeSectionProps> = ({ onCopy, bindingStatus, userName, userId }) => {
+const QRCodeSection: React.FC<QRCodeSectionProps> = ({ onCopy, bindingStatus }) => {
     const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
     const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
-
-    const handleIdCopy = () => {
-        if (userId) {
-            navigator.clipboard.writeText(userId);
-            onCopy();
-        }
-    };
 
     const renderBindingStatus = () => {
         switch (bindingStatus) {
@@ -78,40 +68,6 @@ const QRCodeSection: React.FC<QRCodeSectionProps> = ({ onCopy, bindingStatus, us
                     點此加入好友
                  </a>
             </div>
-
-            {userName && userId && (
-                <div className="w-full mt-8 pt-6 border-t border-gray-200">
-                    <h4 className="text-lg font-semibold text-center mb-4 text-gray-700">已連結的LINE帳號資訊</h4>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
-                                <i className="fa fa-user mr-2 text-primary"></i>
-                                LINE 姓名
-                            </label>
-                            <p className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 font-medium">
-                                {userName}
-                            </p>
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-500 flex items-center mb-1">
-                                <i className="fa fa-id-card-o mr-2 text-primary"></i>
-                                LINE User ID
-                            </label>
-                            <div className="w-full bg-gray-100 rounded-lg p-3 text-gray-800 flex justify-between items-center">
-                                <span className="truncate mr-4" title={userId}>{userId}</span>
-                                <button 
-                                    onClick={handleIdCopy} 
-                                    className="text-gray-500 hover:text-primary transition-colors flex-shrink-0"
-                                    aria-label="複製User ID"
-                                >
-                                    <i className="fa fa-clone fa-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {renderBindingStatus()}
         </div>
     );

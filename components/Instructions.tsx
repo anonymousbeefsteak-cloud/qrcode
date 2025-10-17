@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-const Instructions = () => {
+const Instructions: React.FC = () => {
     return (
         <div className="bg-white rounded-xl p-6 shadow-md">
             <h3 className="text-xl font-bold mb-4 flex items-center">

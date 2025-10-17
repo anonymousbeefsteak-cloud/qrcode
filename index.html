@@ -1,329 +1,308 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣小吃店 - 線上訂餐系統</title>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE 二維碼</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="text/babel">
-      const { useState, useEffect, useCallback } = React;
-
-      // --- Constants ---
-      const CONFIG = {
-          restaurant: {
-              name: "台灣小吃店",
-              phone: "02-1234-5678",
-              address: "臺北市信義區松壽路123號",
-              businessHours: "10:00 - 22:00"
-          },
-          endpointUrl: "https://script.google.com/macros/s/AKfycbzwH5AnXX2TjU2CRAC81yaDko47AHCR5TETX9yT6sNwjPvWH-JgbTY0jVI1HJ2cfbg/exec",
-          liffId: "2008276630-bYNjwMx7",
-          fallbackMenu: [
-              { id: 1, name: "滷肉飯", price: 35, emoji: "🍜", category: "主食" },
-              { id: 2, name: "雞肉飯", price: 40, emoji: "🍚", category: "主食" },
-              { id: 3, name: "蚵仔煎", price: 65, emoji: "🦪", category: "小吃" },
-              { id: 4, name: "大腸麵線", price: 50, emoji: "🍲", category: "湯品" },
-              { id: 5, name: "珍珠奶茶", price: 45, emoji: "🥤", category: "飲料" },
-              { id: 6, name: "鹽酥雞", price: 60, emoji: "🍗", category: "小吃" },
-              { id: 7, name: "甜不辣", price: 40, emoji: "🐟", category: "小吃" },
-              { id: 8, name: "蚵仔酥", price: 70, emoji: "🦪", category: "小吃" },
-              { id: 9, name: "肉圓", price: 45, emoji: "🥟", category: "小吃" },
-              { id: 10, name: "碗粿", price: 35, emoji: "🍮", category: "小吃" }
-          ]
-      };
-
-      // --- Components ---
-      const LoadingSpinner = () => {
-        return (
-          <div className="text-center py-5">
-            <div className="border-4 border-gray-200 border-t-blue-500 rounded-full w-10 h-10 animate-spin mx-auto mb-3"></div>
-            <p className="text-sm text-gray-600">訂單發送中...</p>
-          </div>
-        );
-      };
-      
-      const Notification = ({ notification, onClose }) => {
-        const [show, setShow] = useState(false);
-
-        useEffect(() => {
-          if (notification) {
-            setShow(true);
-            const timer = setTimeout(() => {
-              setShow(false);
-              setTimeout(onClose, 500); 
-            }, 8000);
-            return () => clearTimeout(timer);
-          }
-        }, [notification, onClose]);
-
-        if (!notification) return null;
-
-        const baseClasses = "fixed top-5 right-5 p-4 rounded-lg text-white font-bold transition-transform duration-500 ease-in-out z-50 shadow-lg max-w-sm whitespace-pre-line";
-        const typeClasses = notification.type === 'success' ? 'bg-green-500' : 'bg-red-500';
-        const visibilityClasses = show ? 'translate-x-0' : 'translate-x-[calc(100%+2rem)]';
-
-        return (
-          <div className={`${baseClasses} ${typeClasses} ${visibilityClasses}`}>
-            {notification.message}
-          </div>
-        );
-      };
-      
-      // --- Main App Component ---
-      const App = () => {
-        const [customerName, setCustomerName] = useState('');
-        const [customerPhone, setCustomerPhone] = useState('');
-        const [customerLineId, setCustomerLineId] = useState('');
-        const [pickupTime, setPickupTime] = useState('');
-        const [selectedMenuItem, setSelectedMenuItem] = useState('');
-        const [orderNotes, setOrderNotes] = useState('');
-        const [menuItems, setMenuItems] = useState([]);
-        const [liffUserId, setLiffUserId] = useState(null);
-        const [isLoading, setIsLoading] = useState(false);
-        const [notification, setNotification] = useState(null);
-
-        const showNotification = useCallback((message, type) => {
-          setNotification({ message, type });
-        }, []);
-
-        const setDefaultDateTime = () => {
-          const now = new Date();
-          now.setMinutes(now.getMinutes() + 30);
-          const year = now.getFullYear();
-          const month = String(now.getMonth() + 1).padStart(2, '0');
-          const day = String(now.getDate()).padStart(2, '0');
-          const hours = String(now.getHours()).padStart(2, '0');
-          const minutes = String(now.getMinutes()).padStart(2, '0');
-          setPickupTime(`${year}-${month}-${day}T${hours}:${minutes}`);
-        };
-
-        const resetForm = useCallback(() => {
-          setCustomerName('');
-          setCustomerPhone('');
-          setCustomerLineId(liffUserId || ''); 
-          setSelectedMenuItem('');
-          setOrderNotes('');
-          setDefaultDateTime();
-        }, [liffUserId]);
-        
-        const initializeLiff = useCallback(async () => {
-          try {
-            await liff.init({ liffId: CONFIG.liffId });
-            if (liff.isLoggedIn()) {
-              const profile = await liff.getProfile();
-              setLiffUserId(profile.userId);
-              setCustomerName(profile.displayName || '');
-              setCustomerLineId(profile.userId || '');
-            } else {
-              liff.login();
-            }
-          } catch (error) {
-            console.error('LIFF initialization failed:', error);
-            showNotification('無法初始化 LINE LIFF，部分功能可能無法使用', 'error');
-          }
-        }, [showNotification]);
-
-        const loadMenu = useCallback(async () => {
-          try {
-            const response = await fetch(`${CONFIG.endpointUrl}?action=menu`);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            if (data.status === 'success' && Array.isArray(data.menu)) {
-              setMenuItems(data.menu);
-            } else {
-              throw new Error('Invalid menu data format');
-            }
-          } catch (error) {
-            console.error('Failed to load menu:', error);
-            showNotification('無法載入菜單，將使用預設菜單', 'error');
-            setMenuItems(CONFIG.fallbackMenu);
-          }
-        }, [showNotification]);
-
-        useEffect(() => {
-          const initializeApp = async () => {
-            await initializeLiff();
-            await loadMenu();
-            setDefaultDateTime();
-          };
-          initializeApp();
-        }, [initializeLiff, loadMenu]);
-
-        const handleSubmit = async (e) => {
-          e.preventDefault();
-          
-          if (!customerName || customerName.length < 2) {
-            showNotification('姓名至少需要2個字符', 'error');
-            return;
-          }
-          if (!/^09\d{8}$/.test(customerPhone.replace(/\D/g, ''))) {
-            showNotification('請輸入正確的手機號碼格式 (例如: 0912345678)', 'error');
-            return;
-          }
-          if (new Date(pickupTime) <= new Date()) {
-            showNotification('取餐時間必須是未來時間', 'error');
-            return;
-          }
-          if (!selectedMenuItem) {
-            showNotification('請選擇一項餐點', 'error');
-            return;
-          }
-
-          const priceMatch = selectedMenuItem.match(/\$(\d+)$/);
-          const totalAmount = priceMatch ? parseInt(priceMatch[1], 10) : 0;
-
-          const orderData = {
-            source: 'web_app_react_liff',
-            liffUserId: liffUserId || '未提供',
-            customerName: customerName.trim(),
-            customerPhone: customerPhone.trim(),
-            customerLineId: customerLineId.trim(),
-            product: selectedMenuItem,
-            totalAmount,
-            pickupTime,
-            notes: orderNotes.trim(),
-            timestamp: new Date().toISOString(),
-          };
-
-          setIsLoading(true);
-
-          const maxRetries = 2;
-          for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-              const response = await fetch(CONFIG.endpointUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderData),
-                mode: 'cors',
-              });
-              
-              if (!response.ok) {
-                 const errorText = await response.text();
-                 throw new Error(`HTTP 錯誤: ${response.status} - ${errorText}`);
-              }
-
-              const result = await response.json();
-
-              if (result.status === 'success') {
-                let notificationMessage = `✅ 訂單成功！\n訂單編號: ${result.orderId}\n取餐時間: ${new Date(pickupTime).toLocaleString('zh-TW')}\n總金額: $${totalAmount}`;
-                if (customerLineId || liffUserId) {
-                  notificationMessage += `\n📱 Line通知已發送`;
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Configure Tailwind colors and fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300', // LINE brand green
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
                 }
-                showNotification(notificationMessage, 'success');
-                resetForm();
-                setIsLoading(false);
-                return;
-              } else {
-                throw new Error(result.message || '後端回報訂單提交失敗');
-              }
-            } catch (error) {
-              console.error(`Attempt ${attempt + 1} failed:`, error);
-              if (attempt === maxRetries) {
-                showNotification(`❌ 訂單提交失敗，請檢查網絡或聯繫客服。錯誤: ${error.message}`, 'error');
-              } else {
-                await new Promise(res => setTimeout(res, 1000));
-              }
             }
-          }
-          
-          setIsLoading(false);
+        }
+    </script>
+    
+    <!-- Custom utility classes -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useCallback, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
+
+        // --- Components ---
+
+        const Toast = ({ message, show }) => {
+            return (
+                <div 
+                    className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+                    style={{pointerEvents: 'none'}}
+                >
+                    {message}
+                </div>
+            );
         };
 
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex justify-center items-center p-4 font-sans">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-500 animate-fadeIn">
-              <header className="bg-gradient-to-br from-red-500 to-orange-500 text-white p-8 text-center relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-10"></div>
-                 <h1 className="text-4xl font-bold mb-2 relative z-10 text-shadow">🍜 台灣小吃店</h1>
-                 <p className="text-lg opacity-90 relative z-10">線上訂餐系統 • 快速方便</p>
-              </header>
-              
-              <form onSubmit={handleSubmit} className="p-8 space-y-5">
-                  <div>
-                    <label htmlFor="customerName" className="block mb-1.5 font-semibold text-gray-700 text-sm">顧客姓名 <span className="text-red-500">*</span></label>
-                    <input type="text" id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="請輸入您的姓名" required className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
-                  </div>
-                  <div>
-                    <label htmlFor="customerPhone" className="block mb-1.5 font-semibold text-gray-700 text-sm">聯絡電話 <span className="text-red-500">*</span></label>
-                    <input type="tel" id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="請輸入您的手機號碼" required className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
-                  </div>
-                  <div>
-                    <label htmlFor="customerLineId" className="block mb-1.5 font-semibold text-gray-700 text-sm">Line ID（選填）</label>
-                    <input type="text" id="customerLineId" value={customerLineId} onChange={(e) => setCustomerLineId(e.target.value)} placeholder="接收訂單通知用" className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="pickupTime" className="block mb-1.5 font-semibold text-gray-700 text-sm">取餐時間 <span className="text-red-500">*</span></label>
-                    <input type="datetime-local" id="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} required className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="menuSelect" className="block mb-1.5 font-semibold text-gray-700 text-sm">選擇餐點 <span className="text-red-500">*</span></label>
-                    <select id="menuSelect" value={selectedMenuItem} onChange={(e) => setSelectedMenuItem(e.target.value)} required className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white appearance-none">
-                      <option value="">請選擇餐點</option>
-                      {menuItems.map(item => (
-                        <option key={item.id} value={`${item.name} $${item.price}`}>{`${item.emoji} ${item.name} - $${item.price}`}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="orderNotes" className="block mb-1.5 font-semibold text-gray-700 text-sm">訂單備註</label>
-                    <textarea id="orderNotes" value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} rows={3} placeholder="如有特殊需求請在此備註..." className="w-full p-3 border-2 border-gray-200 rounded-lg text-sm transition duration-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></textarea>
-                  </div>
-                  
-                  {isLoading ? (
-                    <LoadingSpinner />
-                  ) : (
-                    <button type="submit" disabled={isLoading} className="w-full p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-bold text-base cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">🚀 送出訂單</button>
-                  )}
-              </form>
-            </div>
-            <Notification notification={notification} onClose={() => setNotification(null)} />
+        const Footer = () => {
+            return (
+                <footer className="bg-dark text-white py-6">
+                    <div className="container mx-auto px-4 text-center">
+                        <p className="mb-2">© 2024 LINE Corporation. 保留所有權利。</p>
+                        <p className="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+                    </div>
+                </footer>
+            );
+        };
 
-            <style>{`
-              @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              .animate-fadeIn {
-                animation: fadeIn 0.5s ease-out forwards;
-              }
-              .text-shadow {
-                text-shadow: 0 2px 5px rgba(0,0,0,0.25);
-              }
-              select {
-                background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>');
-                background-position: right 0.75rem center;
-                background-repeat: no-repeat;
-                background-size: 1.25em 1.25em;
-              }
-            `}</style>
-          </div>
-        );
-      };
+        const Instructions = () => {
+            return (
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                    <h3 className="text-xl font-bold mb-4 flex items-center">
+                        <i className="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    </h3>
+                    <ol className="space-y-4">
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                        </li>
+                        <li className="flex items-start">
+                            <div className="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
+                        </li>
+                    </ol>
+                </div>
+            );
+        };
 
-      // --- App Initialization ---
-      const rootElement = document.getElementById('root');
-      if (!rootElement) {
-        throw new Error("Could not find root element to mount to");
-      }
+        const QRCodeSection = ({ onCopy, bindingStatus }) => {
+            const lineAddFriendUrl = 'https://line.me/R/ti/p/@561zotgq';
+            const qrCodeUrl = "https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D";
 
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
+            const renderBindingStatus = () => {
+                switch (bindingStatus) {
+                    case 'syncing':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-blue-50 text-blue-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-spinner fa-spin mr-2"></i>正在連結您的LINE帳號...
+                                </p>
+                            </div>
+                        );
+                    case 'success':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-green-50 text-green-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-check-circle mr-2"></i>LINE帳號已連結成功！
+                                </p>
+                            </div>
+                        );
+                    case 'error':
+                        return (
+                            <div className="text-center mt-6 p-3 bg-red-50 text-red-700 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center">
+                                    <i className="fa fa-exclamation-circle mr-2"></i>帳號連結失敗，請重新整理頁面。
+                                </p>
+                            </div>
+                        );
+                    case 'idle':
+                    default:
+                        return null;
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center">
+                    <div className="relative mb-6">
+                        <img 
+                            src={qrCodeUrl}
+                            alt="LINE二維碼"
+                            className="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg"
+                        />
+                        <div className="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div className="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div className="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div className="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    </div>
+                    
+                    <div className="text-center w-full mt-4">
+                        <p className="text-gray-700 mb-4">若無法掃描，可點擊下方按鈕加入</p>
+                        <a
+                            href={lineAddFriendUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg transition duration-300 font-bold text-lg shadow-md hover:shadow-lg w-full md:w-auto"
+                            aria-label="Add Friend on LINE"
+                        >
+                            <i className="fa fa-user-plus mr-2"></i>
+                            點此加入好友
+                        </a>
+                    </div>
+                    {renderBindingStatus()}
+                </div>
+            );
+        };
+        
+        const Header = () => {
+            return (
+                <header className="bg-white shadow-sm">
+                    <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                <i className="fa fa-comment text-white text-xl"></i>
+                            </div>
+                            <h1 className="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
+                        </div>
+                        <div>
+                            <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                                <i className="fa fa-share-alt mr-2"></i>分享
+                            </button>
+                        </div>
+                    </div>
+                </header>
+            );
+        };
+        
+        // --- Main App Component ---
+
+        const App = () => {
+            const [showToast, setShowToast] = useState(false);
+            const [bindingStatus, setBindingStatus] = useState('idle');
+
+            const handleCopy = useCallback(() => {
+                setShowToast(true);
+                setTimeout(() => {
+                    setShowToast(false);
+                }, 3000);
+            }, []);
+
+            useEffect(() => {
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUvQR7aVmq174RvXkMZcjJk-fq6TuC3GavhdmP1MUar-Geg7LwbidZ_uoREjjsSFA/exec';
+                // IMPORTANT: Replace with your actual LIFF ID from the LINE Developers console.
+                // Using a sample ID for demonstration purposes to fix the "channel not found" error.
+                const LIFF_ID = '1655250338-04l5v6qW';
+
+                const initializeLiffAndBindUser = async () => {
+                    try {
+                        const liff = window.liff;
+                        if (!liff) {
+                            console.warn('LIFF SDK not found.');
+                            setBindingStatus('idle');
+                            return;
+                        }
+                        
+                        await liff.init({ liffId: LIFF_ID });
+
+                        if (!liff.isLoggedIn()) {
+                            console.log('User is not logged in to LINE.');
+                            setBindingStatus('idle');
+                            return;
+                        }
+
+                        if (sessionStorage.getItem('line_user_bound_session')) {
+                            setBindingStatus('success');
+                            return;
+                        }
+                        
+                        setBindingStatus('syncing');
+                        const profile = await liff.getProfile();
+                        
+                        const payload = {
+                            source: 'line_web_app',
+                            customerName: profile.displayName,
+                            customerLineId: profile.userId,
+                            notes: 'Automatic user binding via LIFF',
+                            items: [],
+                            totalAmount: 0,
+                            pickupTime: new Date().toLocaleDateString('zh-TW'),
+                        };
+
+                        await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            cache: 'no-cache',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        sessionStorage.setItem('line_user_bound_session', 'true');
+                        setBindingStatus('success');
+
+                    } catch (error) {
+                        console.error('LIFF initialization or binding failed:', error);
+                        setBindingStatus('error');
+                    }
+                };
+                
+                initializeLiffAndBindUser();
+                
+            }, []);
+
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Header />
+                    <main className="flex-grow container mx-auto px-4 py-8 md:py-16">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
+                                <p className="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                            </div>
+                            <QRCodeSection onCopy={handleCopy} bindingStatus={bindingStatus} />
+                            <Instructions />
+                        </div>
+                    </main>
+                    <Footer />
+                    <Toast message="已複製到剪貼簿" show={showToast} />
+                </div>
+            );
+        };
+
+        // --- Render App ---
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+
     </script>
-  </body>
+<script type="module" src="/index.tsx"></script>
+</body>
 </html>

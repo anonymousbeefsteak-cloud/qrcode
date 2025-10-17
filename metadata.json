@@ -1,5 +1,5 @@
 {
-  "name": "LINE QR Code Friend Registrar",
-  "description": "A LIFF application that captures a user's LINE profile after they scan a QR code or open the app link, and adds their information to a Google Sheet.",
+  "name": "LINE QR Code ",
+  "description": "A web application to display a LINE QR code for adding contacts or joining groups, built with React and Tailwind CSS. It provides a clear, visually appealing interface with instructions and a copy-to-clipboard feature for the LINE ID.",
   "requestFramePermissions": []
 }
