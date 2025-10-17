@@ -1,114 +1,293 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>無名牛排 - 會員綁定引導</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
-            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            text-align: center;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE 二維碼 - LIFF整合</title>
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind顏色和字體 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00C300', // LINE品牌綠色
+                        secondary: '#F5F5F5',
+                        dark: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定義工具類 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .qr-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            }
         }
         
-        .container {
-            background: white;
-            color: #333;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-width: 400px;
+        /* 自定義動畫 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
         }
         
-        .logo {
-            font-size: 4em;
-            margin-bottom: 10px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        h1 {
-            color: #8B4513;
-            margin-bottom: 20px;
+        .pulse-slow {
+            animation: pulse 3s infinite;
         }
         
-        .steps {
-            text-align: left;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-        
-        .step {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: flex-start;
-        }
-        
-        .step-number {
-            background: #8B4513;
-            color: white;
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-        
-        .btn {
-            background: #8B4513;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 1.1em;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 10px 5px;
-        }
-        
-        .btn:hover {
-            background: #A0522D;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
         }
     </style>
+    
+    <!-- 引入Google字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <div class="logo">🥩</div>
-        <h1>無名牛排 - 會員綁定</h1>
+<body class="bg-gray-50 font-sans text-dark opacity-0 transition-opacity duration-500">
+    <div class="min-h-screen flex flex-col">
+        <!-- 頁頭 -->
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        <i class="fa fa-comment text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="shareButton" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                        <i class="fa fa-share-alt mr-2"></i>分享
+                    </button>
+                    <button id="profileButton" class="bg-secondary hover:bg-gray-300 text-dark px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                        <i class="fa fa-user mr-2"></i>個人資料
+                    </button>
+                </div>
+            </div>
+        </header>
         
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div>請確保您正在使用 LINE App</div>
+        <!-- 主要內容 -->
+        <main class="flex-grow container mx-auto px-4 py-8 md:py-16">
+            <div class="max-w-3xl mx-auto">
+                <!-- 標題區域 -->
+                <div class="text-center mb-10 fade-in">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
+                    <p class="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
+                </div>
+                
+                <!-- QR碼區域 -->
+                <div class="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center fade-in">
+                    <div class="relative mb-6">
+                        <!-- QR碼 -->
+                        <img src="https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D" 
+                             alt="LINE二維碼" 
+                             class="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg pulse-slow">
+                        <!-- 裝飾性邊框 -->
+                        <div class="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                        <div class="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                        <div class="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                        <div class="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
+                        <div class="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
+                            <i class="fa fa-id-card text-primary mr-2"></i>
+                            <span id="lineId">561zotgq</span>
+                            <button class="ml-3 text-primary hover:text-primary/80 transition" onclick="copyToClipboard('561zotgq')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用戶信息區域 (僅在LINE中顯示) -->
+                <div id="userInfo" class="bg-white rounded-xl p-6 shadow-md mb-6 hidden fade-in">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-user-circle text-primary mr-2"></i>您的個人資料
+                    </h3>
+                    <div class="flex items-center space-x-4">
+                        <img id="userPicture" src="" alt="用戶頭像" class="w-16 h-16 rounded-full">
+                        <div>
+                            <p id="userName" class="font-bold text-lg"></p>
+                            <p id="userStatus" class="text-gray-600 text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 步驟說明 -->
+                <div class="bg-white rounded-xl p-6 shadow-md fade-in">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-info-circle text-primary mr-2"></i>使用說明
+                    </h3>
+                    <ol class="space-y-4">
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
+                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
+                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
+                        </li>
+                        <li class="flex items-start">
+                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
+                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
+                        </li>
+                    </ol>
+                </div>
             </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div>點擊下方按鈕在 LINE 中開啟綁定頁面</div>
+        </main>
+        
+        <!-- 頁腳 -->
+        <footer class="bg-dark text-white py-6">
+            <div class="container mx-auto px-4 text-center">
+                <p class="mb-2">© 2023 LINE Corporation. 保留所有權利。</p>
+                <p class="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
             </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div>系統將自動完成會員綁定</div>
+        </footer>
+    </div>
+    
+    <!-- 複製提示彈窗 -->
+    <div id="copyToast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
+        已複製到剪貼簿
+    </div>
+    
+    <!-- 個人資料彈窗 -->
+    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">個人資料</h3>
+                <button id="closeProfileModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <img id="modalUserPicture" src="" alt="用戶頭像" class="w-24 h-24 rounded-full mx-auto mb-4">
+                <p id="modalUserName" class="font-bold text-xl mb-2"></p>
+                <p id="modalUserStatus" class="text-gray-600 mb-4"></p>
+                <p id="modalUserId" class="text-gray-500 text-sm"></p>
             </div>
         </div>
-        
-        <a href="https://line.me/R/app/2008289130-9XPR8Kpj" class="btn">
-            在 LINE 中開啟綁定頁面
-        </a>
-        
-        <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
-            如果按鈕無法點擊，請複製以下網址在 LINE 中開啟：<br>
-            <code>https://line.me/R/app/2008289130-9XPR8Kpj</code>
-        </p>
     </div>
+    
+    <script>
+        // LIFF初始化
+        let liffInitialized = false;
+        
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: 'YOUR_LIFF_ID_HERE' });
+                liffInitialized = true;
+                console.log('LIFF初始化成功');
+                
+                // 根據是否在LINE中顯示不同內容
+                if (liff.isInClient()) {
+                    document.getElementById('profileButton').classList.remove('hidden');
+                    
+                    // 獲取用戶資料
+                    const profile = await liff.getProfile();
+                    document.getElementById('userInfo').classList.remove('hidden');
+                    document.getElementById('userPicture').src = profile.pictureUrl;
+                    document.getElementById('userName').textContent = profile.displayName;
+                    document.getElementById('userStatus').textContent = '已登入LINE';
+                    
+                    // 設置彈窗內容
+                    document.getElementById('modalUserPicture').src = profile.pictureUrl;
+                    document.getElementById('modalUserName').textContent = profile.displayName;
+                    document.getElementById('modalUserStatus').textContent = '已登入LINE';
+                    document.getElementById('modalUserId').textContent = `用戶ID: ${profile.userId}`;
+                } else {
+                    document.getElementById('profileButton').classList.add('hidden');
+                }
+                
+                // 顯示頁面內容
+                document.body.classList.add('opacity-100');
+                document.body.classList.remove('opacity-0');
+                
+            } catch (error) {
+                console.error('LIFF初始化失敗:', error);
+                // 即使LIFF失敗也顯示頁面
+                document.body.classList.add('opacity-100');
+                document.body.classList.remove('opacity-0');
+            }
+        }
+        
+        // 複製功能
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // 顯示提示
+                const toast = document.getElementById('copyToast');
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+                
+                // 3秒後隱藏提示
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0');
+                }, 3000);
+            });
+        }
+        
+        // 分享功能
+        document.getElementById('shareButton').addEventListener('click', async () => {
+            if (liffInitialized && liff.isApiAvailable('shareTargetPicker')) {
+                try {
+                    const result = await liff.shareTargetPicker([
+                        {
+                            type: 'text',
+                            text: '掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq'
+                        }
+                    ]);
+                    
+                    if (result) {
+                        console.log('分享成功');
+                    } else {
+                        console.log('分享取消');
+                    }
+                } catch (error) {
+                    console.error('分享失敗:', error);
+                    // 如果分享失敗，使用傳統方式
+                    copyToClipboard('掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq');
+                    alert('分享連結已複製到剪貼簿，請貼上分享給朋友');
+                }
+            } else {
+                // 如果不在LINE環境或分享功能不可用，使用傳統方式
+                copyToClipboard('掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq');
+                alert('分享連結已複製到剪貼簿，請貼上分享給朋友');
+            }
+        });
+        
+        // 個人資料彈窗功能
+        document.getElementById('profileButton').addEventListener('click', () => {
+            document.getElementById('profileModal').classList.remove('hidden');
+        });
+        
+        document.getElementById('closeProfileModal').addEventListener('click', () => {
+            document.getElementById('profileModal').classList.add('hidden');
+        });
+        
+        // 頁面加載時初始化LIFF
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeLiff();
+        });
+    </script>
 </body>
 </html>
