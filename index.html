@@ -6,65 +6,256 @@
 <title>無名牛排 - 會員綁定</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
-  body { font-family: Arial, "Microsoft JhengHei", sans-serif; background:#faf7f2; color:#333; }
-  .card { max-width:480px; margin:60px auto; background:#fff; padding:24px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.08); text-align:center }
-  img.avatar { width:96px; height:96px; border-radius:50%; object-fit:cover; margin-bottom:12px; }
-  button { background:#8B4513; color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer }
+  body { 
+    font-family: Arial, "Microsoft JhengHei", sans-serif; 
+    background: #faf7f2; 
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card { 
+    max-width: 480px; 
+    width: 100%;
+    background: #fff; 
+    padding: 30px; 
+    border-radius: 15px; 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08); 
+    text-align: center;
+    box-sizing: border-box;
+  }
+  h1 { color: #8B4513; margin-bottom: 20px; }
+  img.avatar { 
+    width: 96px; 
+    height: 96px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    margin: 0 auto 15px; 
+    display: block;
+    border: 3px solid #8B4513;
+  }
+  button { 
+    background: #8B4513; 
+    color: #fff; 
+    border: none; 
+    padding: 12px 24px; 
+    border-radius: 6px; 
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
+    width: 100%;
+    max-width: 200px;
+  }
+  button:hover {
+    background: #A0522D;
+  }
+  button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+  }
+  .status-box {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border-left: 4px solid #8B4513;
+  }
+  .success { color: #28a745; }
+  .error { color: #dc3545; }
+  .loading { color: #007bff; }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>🥩 無名牛排 會員綁定</h1>
-    <p id="status">正在初始化 LIFF…</p>
-    <img id="avatar" class="avatar" src="" alt="" style="display:none">
-    <h2 id="name" style="margin:10px 0"></h2>
-    <p id="result"></p>
-    <div style="margin-top:12px"><button id="closeBtn" style="display:none" onclick="liff.closeWindow()">關閉</button></div>
+    
+    <div id="loading" class="status-box loading">
+      <p>正在初始化 LIFF…</p>
+    </div>
+    
+    <div id="userInfo" style="display: none;">
+      <img id="avatar" class="avatar" src="" alt="用戶頭像">
+      <h2 id="name"></h2>
+      <p id="userStatus"></p>
+    </div>
+    
+    <div id="result" class="status-box" style="display: none;">
+      <!-- 結果訊息會顯示在這裡 -->
+    </div>
+    
+    <div style="margin-top: 20px;">
+      <button id="closeBtn" style="display: none;" onclick="closeLIFF()">關閉視窗</button>
+      <button id="retryBtn" style="display: none;" onclick="retryBinding()">重試</button>
+    </div>
   </div>
 
 <script>
 const LIFF_ID = "2008289130-9XPR8Kpj";
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzqz4S0thSUZ9zY1PO8K_BMTvZde-MJfCSVsNEWR3NtnT-x55CZj38VtqWcl4GOuv62pQ/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzqz4S0thSUZ9zY1PO8K_BMTvZde-MJfCSVsNEWR3tnT-x55CZj38VtqWcl4GOuv62pQ/exec";
+
+let retryCount = 0;
+const MAX_RETRIES = 3;
 
 async function initLiff() {
   try {
+    showLoading('正在初始化 LIFF…');
+    
     await liff.init({ liffId: LIFF_ID });
-    document.getElementById('status').textContent = 'LIFF 已初始化';
-    if (!liff.isLoggedIn()) { liff.login(); return; }
+    
+    if (!liff.isLoggedIn()) {
+      showLoading('正在登入…');
+      liff.login();
+      return;
+    }
 
     const profile = await liff.getProfile();
-    document.getElementById('name').textContent = profile.displayName;
-    document.getElementById('avatar').src = profile.pictureUrl || '';
-    if (profile.pictureUrl) document.getElementById('avatar').style.display = 'block';
-    document.getElementById('status').textContent = '正在將資料傳送至後端…';
+    showUserInfo(profile);
+    
+    await sendUserData(profile);
 
+  } catch (err) {
+    console.error('LIFF 初始化錯誤:', err);
+    showError('初始化失敗: ' + err.message);
+    showRetryButton();
+  }
+}
+
+function showUserInfo(profile) {
+  document.getElementById('name').textContent = profile.displayName;
+  
+  if (profile.pictureUrl) {
+    document.getElementById('avatar').src = profile.pictureUrl;
+    document.getElementById('avatar').style.display = 'block';
+  }
+  
+  document.getElementById('userInfo').style.display = 'block';
+  document.getElementById('userStatus').textContent = '正在綁定會員資料…';
+}
+
+async function sendUserData(profile) {
+  try {
+    showLoading('正在綁定會員資料…');
+    
     const payload = {
       userId: profile.userId,
       displayName: profile.displayName,
       pictureUrl: profile.pictureUrl || '',
-      statusMessage: ''
+      statusMessage: profile.statusMessage || '',
+      source: 'qr_code_liff',
+      timestamp: new Date().toISOString()
     };
 
-    const res = await fetch(GAS_URL, {
+    console.log('發送資料:', payload);
+
+    const response = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
-    const json = await res.json();
-    if (json.success) {
-      document.getElementById('result').textContent = '✅ ' + json.message;
-    } else {
-      document.getElementById('result').textContent = '⚠️ ' + json.message;
+
+    if (!response.ok) {
+      throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
     }
-    document.getElementById('closeBtn').style.display = 'inline-block';
+
+    const result = await response.json();
+    console.log('後端回應:', result);
+
+    // 處理不同格式的回應
+    if (result.status === 'success' || result.success) {
+      showSuccess(result.message || '會員綁定成功！');
+      showCloseButton();
+    } else {
+      throw new Error(result.message || '綁定失敗');
+    }
 
   } catch (err) {
-    console.error(err);
-    document.getElementById('status').textContent = '初始化失敗: ' + err.message;
+    console.error('資料傳送錯誤:', err);
+    
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      showError(`綁定失敗，${3}秒後重試... (${retryCount}/${MAX_RETRIES})`);
+      setTimeout(() => sendUserData(profile), 3000);
+    } else {
+      showError('綁定失敗: ' + err.message);
+      showRetryButton();
+    }
   }
 }
 
-window.addEventListener('load', initLiff);
+function showLoading(message) {
+  document.getElementById('loading').innerHTML = `<p>${message}</p>`;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+  hideButtons();
+}
+
+function showSuccess(message) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').innerHTML = `<p class="success">✅ ${message}</p>`;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('userStatus').textContent = '綁定完成';
+}
+
+function showError(message) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').innerHTML = `<p class="error">⚠️ ${message}</p>`;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('userStatus').textContent = '綁定失敗';
+}
+
+function showCloseButton() {
+  document.getElementById('closeBtn').style.display = 'inline-block';
+  document.getElementById('retryBtn').style.display = 'none';
+}
+
+function showRetryButton() {
+  document.getElementById('closeBtn').style.display = 'inline-block';
+  document.getElementById('retryBtn').style.display = 'inline-block';
+}
+
+function hideButtons() {
+  document.getElementById('closeBtn').style.display = 'none';
+  document.getElementById('retryBtn').style.display = 'none';
+}
+
+function closeLIFF() {
+  if (liff.isInClient()) {
+    liff.closeWindow();
+  } else {
+    // 如果在外部瀏覽器，顯示提示
+    showSuccess('您可以在 LINE 中關閉此視窗');
+  }
+}
+
+function retryBinding() {
+  retryCount = 0;
+  location.reload();
+}
+
+// 處理頁面載入
+window.addEventListener('load', function() {
+  // 檢查是否在 LINE 環境中
+  if (navigator.userAgent.indexOf('Line') === -1 && !liff.isInClient()) {
+    showError('請在 LINE App 中開啟此頁面');
+    return;
+  }
+  
+  initLiff();
+});
+
+// 處理網路狀態變化
+window.addEventListener('online', function() {
+  console.log('網路已連線');
+});
+
+window.addEventListener('offline', function() {
+  showError('網路連線已中斷，請檢查網路設定');
+});
 </script>
 </body>
 </html>
