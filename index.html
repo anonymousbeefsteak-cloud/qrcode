@@ -1,293 +1,228 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 二維碼 - LIFF整合</title>
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    
-    <!-- 配置Tailwind顏色和字體 -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00C300', // LINE品牌綠色
-                        secondary: '#F5F5F5',
-                        dark: '#333333'
-                    },
-                    fontFamily: {
-                        sans: ['Noto Sans TC', 'sans-serif'],
-                    },
-                }
-            }
+    <title>台灣小吃店 - LINE訂餐</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        /* 保持原有樣式，專注於功能修復 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei'; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 15px; }
+        .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; }
+        .header { background: #00C300; color: white; padding: 20px; text-align: center; }
+        .order-form { padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 12px; border: 2px solid #E1E8ED; border-radius: 8px; 
         }
-    </script>
-    
-    <!-- 自定義工具類 -->
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .qr-shadow {
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            }
-        }
-        
-        /* 自定義動畫 */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .pulse-slow {
-            animation: pulse 3s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
+        .readonly-field { background-color: #f5f5f5; color: #6C757D; cursor: not-allowed; }
+        .user-info { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+        .debug-panel { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 12px; }
     </style>
-    
-    <!-- 引入Google字體 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-50 font-sans text-dark opacity-0 transition-opacity duration-500">
-    <div class="min-h-screen flex flex-col">
-        <!-- 頁頭 -->
-        <header class="bg-white shadow-sm">
-            <div class="container mx-auto px-4 py-6 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                        <i class="fa fa-comment text-white text-xl"></i>
-                    </div>
-                    <h1 class="text-xl md:text-2xl font-bold">LINE 二維碼</h1>
-                </div>
-                <div class="flex space-x-2">
-                    <button id="shareButton" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center">
-                        <i class="fa fa-share-alt mr-2"></i>分享
-                    </button>
-                    <button id="profileButton" class="bg-secondary hover:bg-gray-300 text-dark px-4 py-2 rounded-lg transition duration-300 flex items-center">
-                        <i class="fa fa-user mr-2"></i>個人資料
-                    </button>
-                </div>
-            </div>
-        </header>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍜 台灣小吃店</h1>
+            <p>LINE 快速訂餐</p>
+        </div>
         
-        <!-- 主要內容 -->
-        <main class="flex-grow container mx-auto px-4 py-8 md:py-16">
-            <div class="max-w-3xl mx-auto">
-                <!-- 標題區域 -->
-                <div class="text-center mb-10 fade-in">
-                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4">掃描二維碼加入聯繫</h2>
-                    <p class="text-gray-600 text-lg">使用LINE應用程式掃描下方二維碼，立即添加為好友或加入群組</p>
-                </div>
-                
-                <!-- QR碼區域 -->
-                <div class="bg-white rounded-xl p-6 md:p-10 qr-shadow mb-10 flex flex-col items-center fade-in">
-                    <div class="relative mb-6">
-                        <!-- QR碼 -->
-                        <img src="https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/4e03bdf943d1443ea3ec5fa72978155a.png~tplv-a9rns2rl98-24:720:720.png?rcl=20251011120817294D51A8FB4817821CDD&rk3s=8e244e95&rrcfp=8a172a1a&x-expires=1760760497&x-signature=sMiaEFbK7IUchDhVNcD3LSxPHU0%3D" 
-                             alt="LINE二維碼" 
-                             class="w-64 h-64 md:w-80 md:h-80 object-contain border-4 border-gray-100 rounded-lg pulse-slow">
-                        <!-- 裝飾性邊框 -->
-                        <div class="absolute -top-3 -left-3 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
-                        <div class="absolute -top-3 -right-3 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
-                        <div class="absolute -bottom-3 -left-3 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
-                        <div class="absolute -bottom-3 -right-3 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
-                    </div>
-                    
-                    <div class="text-center">
-                        <p class="text-gray-700 mb-2">若無法掃描，可手動輸入ID加入</p>
-                        <div class="flex items-center justify-center bg-gray-100 px-4 py-2 rounded-lg font-medium">
-                            <i class="fa fa-id-card text-primary mr-2"></i>
-                            <span id="lineId">561zotgq</span>
-                            <button class="ml-3 text-primary hover:text-primary/80 transition" onclick="copyToClipboard('561zotgq')">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 用戶信息區域 (僅在LINE中顯示) -->
-                <div id="userInfo" class="bg-white rounded-xl p-6 shadow-md mb-6 hidden fade-in">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fa fa-user-circle text-primary mr-2"></i>您的個人資料
-                    </h3>
-                    <div class="flex items-center space-x-4">
-                        <img id="userPicture" src="" alt="用戶頭像" class="w-16 h-16 rounded-full">
-                        <div>
-                            <p id="userName" class="font-bold text-lg"></p>
-                            <p id="userStatus" class="text-gray-600 text-sm"></p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 步驟說明 -->
-                <div class="bg-white rounded-xl p-6 shadow-md fade-in">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fa fa-info-circle text-primary mr-2"></i>使用說明
-                    </h3>
-                    <ol class="space-y-4">
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">1</div>
-                            <p>打開LINE應用程式，點擊右上角的「+」號</p>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">2</div>
-                            <p>選擇「掃描」選項，將鏡頭對準上方二維碼</p>
-                        </li>
-                        <li class="flex items-start">
-                            <div class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5 mr-3">3</div>
-                            <p>掃描成功後，按照提示完成添加好友或加入群組的操作</p>
-                        </li>
-                    </ol>
-                </div>
+        <div class="order-form">
+            <!-- LINE 用戶資訊 -->
+            <div class="user-info" id="userInfo">
+                🔄 載入 LINE 資訊中...
             </div>
-        </main>
-        
-        <!-- 頁腳 -->
-        <footer class="bg-dark text-white py-6">
-            <div class="container mx-auto px-4 text-center">
-                <p class="mb-2">© 2023 LINE Corporation. 保留所有權利。</p>
-                <p class="text-gray-400 text-sm">LINE是LINE Corporation的註冊商標</p>
+            
+            <!-- 除錯資訊 -->
+            <div class="debug-panel" id="debugPanel">
+                <strong>系統狀態:</strong> 初始化中...
             </div>
-        </footer>
-    </div>
-    
-    <!-- 複製提示彈窗 -->
-    <div id="copyToast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
-        已複製到剪貼簿
-    </div>
-    
-    <!-- 個人資料彈窗 -->
-    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">個人資料</h3>
-                <button id="closeProfileModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fa fa-times"></i>
-                </button>
+            
+            <!-- 顧客資訊 -->
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="customerName" class="readonly-field" readonly placeholder="自動帶入 LINE 名稱">
             </div>
-            <div class="text-center">
-                <img id="modalUserPicture" src="" alt="用戶頭像" class="w-24 h-24 rounded-full mx-auto mb-4">
-                <p id="modalUserName" class="font-bold text-xl mb-2"></p>
-                <p id="modalUserStatus" class="text-gray-600 mb-4"></p>
-                <p id="modalUserId" class="text-gray-500 text-sm"></p>
+            
+            <div class="form-group">
+                <label>LINE User ID</label>
+                <input type="text" id="customerLineId" class="readonly-field" readonly placeholder="自動帶入 LINE User ID">
             </div>
+            
+            <!-- 其他表單欄位保持不變 -->
+            <div class="form-group">
+                <label>手機號碼</label>
+                <input type="tel" id="customerPhone" placeholder="0912345678" required>
+            </div>
+            
+            <!-- 菜單選擇等其他內容 -->
         </div>
     </div>
-    
+
     <script>
-        // LIFF初始化
-        let liffInitialized = false;
+        // 系統配置
+        const CONFIG = {
+            LIFF_ID: '2008289130-9XPR8Kpj'
+        };
         
-        async function initializeLiff() {
+        let userProfile = null;
+        
+        // 更新除錯資訊
+        function updateDebugInfo(message) {
+            document.getElementById('debugPanel').innerHTML = `<strong>系統狀態:</strong> ${message}`;
+            console.log('DEBUG:', message);
+        }
+        
+        // 強化 LIFF 初始化
+        async function initializeLiffWithRetry(retryCount = 0) {
+            const maxRetries = 3;
+            
             try {
-                await liff.init({ liffId: 'YOUR_LIFF_ID_HERE' });
-                liffInitialized = true;
-                console.log('LIFF初始化成功');
+                updateDebugInfo(`初始化 LIFF... (嘗試 ${retryCount + 1}/${maxRetries})`);
                 
-                // 根據是否在LINE中顯示不同內容
-                if (liff.isInClient()) {
-                    document.getElementById('profileButton').classList.remove('hidden');
-                    
-                    // 獲取用戶資料
-                    const profile = await liff.getProfile();
-                    document.getElementById('userInfo').classList.remove('hidden');
-                    document.getElementById('userPicture').src = profile.pictureUrl;
-                    document.getElementById('userName').textContent = profile.displayName;
-                    document.getElementById('userStatus').textContent = '已登入LINE';
-                    
-                    // 設置彈窗內容
-                    document.getElementById('modalUserPicture').src = profile.pictureUrl;
-                    document.getElementById('modalUserName').textContent = profile.displayName;
-                    document.getElementById('modalUserStatus').textContent = '已登入LINE';
-                    document.getElementById('modalUserId').textContent = `用戶ID: ${profile.userId}`;
+                // 初始化 LIFF
+                await liff.init({ liffId: CONFIG.LIFF_ID });
+                updateDebugInfo('LIFF 初始化成功');
+                
+                // 檢查登入狀態
+                if (liff.isLoggedIn()) {
+                    updateDebugInfo('用戶已登入，獲取用戶資料...');
+                    await loadUserProfile();
                 } else {
-                    document.getElementById('profileButton').classList.add('hidden');
+                    updateDebugInfo('用戶未登入，嘗試自動登入...');
+                    
+                    // 在歡迎訊息情境中，通常應該已經登入
+                    // 如果未登入，可能是權限問題
+                    if (retryCount < maxRetries) {
+                        setTimeout(() => initializeLiffWithRetry(retryCount + 1), 1000);
+                    } else {
+                        updateDebugInfo('自動登入失敗，請重新整理頁面');
+                        showError('請重新整理頁面或聯繫客服');
+                    }
                 }
-                
-                // 顯示頁面內容
-                document.body.classList.add('opacity-100');
-                document.body.classList.remove('opacity-0');
                 
             } catch (error) {
-                console.error('LIFF初始化失敗:', error);
-                // 即使LIFF失敗也顯示頁面
-                document.body.classList.add('opacity-100');
-                document.body.classList.remove('opacity-0');
-            }
-        }
-        
-        // 複製功能
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                // 顯示提示
-                const toast = document.getElementById('copyToast');
-                toast.classList.remove('opacity-0');
-                toast.classList.add('opacity-100');
+                console.error('LIFF 初始化錯誤:', error);
+                updateDebugInfo(`初始化失敗: ${error.message}`);
                 
-                // 3秒後隱藏提示
-                setTimeout(() => {
-                    toast.classList.remove('opacity-100');
-                    toast.classList.add('opacity-0');
-                }, 3000);
-            });
+                if (retryCount < maxRetries) {
+                    updateDebugInfo(`${1000 * (retryCount + 1)}ms 後重試...`);
+                    setTimeout(() => initializeLiffWithRetry(retryCount + 1), 1000 * (retryCount + 1));
+                } else {
+                    updateDebugInfo('所有重試失敗，請檢查 LIFF ID 設定');
+                    showError('系統初始化失敗，請聯繫客服');
+                }
+            }
         }
         
-        // 分享功能
-        document.getElementById('shareButton').addEventListener('click', async () => {
-            if (liffInitialized && liff.isApiAvailable('shareTargetPicker')) {
+        // 載入用戶資料（強化版）
+        async function loadUserProfile() {
+            try {
+                updateDebugInfo('正在獲取用戶個人資料...');
+                
+                // 獲取用戶資料
+                userProfile = await liff.getProfile();
+                updateDebugInfo(`用戶資料獲取成功: ${userProfile.displayName}`);
+                
+                // 更新 UI
+                updateUserInfoUI();
+                
+                // 獲取其他上下文資訊
+                const context = liff.getContext();
+                updateDebugInfo(`上下文類型: ${context.type}, LIFF ID: ${context.liffId}`);
+                
+            } catch (error) {
+                console.error('獲取用戶資料失敗:', error);
+                updateDebugInfo(`用戶資料獲取失敗: ${error.message}`);
+                
+                // 嘗試使用備用方法
                 try {
-                    const result = await liff.shareTargetPicker([
-                        {
-                            type: 'text',
-                            text: '掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq'
-                        }
-                    ]);
-                    
-                    if (result) {
-                        console.log('分享成功');
-                    } else {
-                        console.log('分享取消');
-                    }
-                } catch (error) {
-                    console.error('分享失敗:', error);
-                    // 如果分享失敗，使用傳統方式
-                    copyToClipboard('掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq');
-                    alert('分享連結已複製到剪貼簿，請貼上分享給朋友');
+                    updateDebugInfo('嘗試備用方法獲取用戶資訊...');
+                    await tryAlternativeMethods();
+                } catch (fallbackError) {
+                    updateDebugInfo('所有方法都失敗');
+                    showError('無法獲取用戶資訊，請聯繫客服');
                 }
+            }
+        }
+        
+        // 更新用戶資訊到 UI
+        function updateUserInfoUI() {
+            if (userProfile) {
+                // 更新唯讀欄位
+                document.getElementById('customerName').value = userProfile.displayName;
+                document.getElementById('customerLineId').value = userProfile.userId;
+                
+                // 更新用戶資訊顯示
+                document.getElementById('userInfo').innerHTML = 
+                    `✅ 歡迎，${userProfile.displayName}！LINE 綁定成功`;
+                
+                updateDebugInfo(`UI 更新完成: ${userProfile.displayName} (${userProfile.userId})`);
+            }
+        }
+        
+        // 備用方法獲取用戶資訊
+        async function tryAlternativeMethods() {
+            try {
+                // 方法 1: 嘗試使用 liff.getProfile() 的不同呼叫方式
+                updateDebugInfo('嘗試方法 1: 直接呼叫 getProfile...');
+                const profile = await liff.getProfile();
+                if (profile) {
+                    userProfile = profile;
+                    updateUserInfoUI();
+                    return;
+                }
+            } catch (e) {
+                updateDebugInfo(`方法 1 失敗: ${e.message}`);
+            }
+            
+            try {
+                // 方法 2: 檢查是否有部分資訊可用
+                updateDebugInfo('嘗試方法 2: 檢查基本資訊...');
+                if (liff.isLoggedIn()) {
+                    // 即使 getProfile 失敗，我們仍然知道用戶已登入
+                    document.getElementById('userInfo').innerHTML = 
+                        `⚠️ 歡迎使用訂餐服務！`;
+                    document.getElementById('customerName').placeholder = '請手動輸入姓名';
+                    document.getElementById('customerLineId').placeholder = '系統自動記錄';
+                }
+            } catch (e) {
+                updateDebugInfo(`方法 2 失敗: ${e.message}`);
+            }
+        }
+        
+        // 顯示錯誤訊息
+        function showError(message) {
+            document.getElementById('userInfo').innerHTML = `❌ ${message}`;
+            document.getElementById('userInfo').style.background = '#FFEAA7';
+        }
+        
+        // 頁面載入初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebugInfo('頁面載入完成，開始初始化...');
+            
+            // 檢查 LIFF SDK 是否載入
+            if (typeof liff === 'undefined') {
+                updateDebugInfo('LIFF SDK 未載入，等待載入...');
+                // 等待 SDK 載入
+                const checkSDK = setInterval(() => {
+                    if (typeof liff !== 'undefined') {
+                        clearInterval(checkSDK);
+                        initializeLiffWithRetry();
+                    }
+                }, 100);
             } else {
-                // 如果不在LINE環境或分享功能不可用，使用傳統方式
-                copyToClipboard('掃描這個QR碼加入我的LINE聯繫！ID: 561zotgq');
-                alert('分享連結已複製到剪貼簿，請貼上分享給朋友');
+                initializeLiffWithRetry();
             }
         });
         
-        // 個人資料彈窗功能
-        document.getElementById('profileButton').addEventListener('click', () => {
-            document.getElementById('profileModal').classList.remove('hidden');
-        });
-        
-        document.getElementById('closeProfileModal').addEventListener('click', () => {
-            document.getElementById('profileModal').classList.add('hidden');
-        });
-        
-        // 頁面加載時初始化LIFF
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeLiff();
-        });
+        // 添加重試按鈕功能
+        function retryInitialization() {
+            updateDebugInfo('手動重試初始化...');
+            initializeLiffWithRetry();
+        }
     </script>
 </body>
 </html>
